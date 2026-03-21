@@ -28,7 +28,7 @@ Open your new repo in Claude Code and run:
 /setup
 ```
 
-This walks you through a guided onboarding:
+This initializes your repo (renames config files, removes dev artifacts) and walks you through guided onboarding:
 - Dietary restrictions, allergies, likes/dislikes
 - Cooking skill level and equipment
 - Cuisine preferences
@@ -58,7 +58,8 @@ Each component has a `SKILL.md` that defines how Claude handles requests for tha
 
 | Command | Purpose |
 |---|---|
-| `/setup` | Guided onboarding — configure your profile and inventory |
+| `/setup` | Guided onboarding — initialize repo, configure profile and inventory |
+| `/sync` | Pull latest framework updates from the template repo |
 
 ## Philosophy
 

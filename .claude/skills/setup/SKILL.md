@@ -16,7 +16,28 @@ Welcome the user and walk them through setting up their personal eating manager.
 
 ## Setup Flow
 
-Guide the user through 5 stages using `AskUserQuestion`. Keep it conversational and friendly. The user can skip any stage — just note what was skipped at the end.
+Guide the user through 6 stages using `AskUserQuestion`. Keep it conversational and friendly. The user can skip any stage — just note what was skipped at the end.
+
+### Stage 0 — Initialize Repo
+
+This stage transforms the cloned template into a personal data repo. Only runs if `CLAUDE.app.md` exists (i.e., first-time setup from template).
+
+1. **Rename app instructions**: `CLAUDE.app.md` → `CLAUDE.md` (overwrite the dev version)
+2. **Create `CLAUDE.local.md`**: Ask the user their name, then create the file:
+   ```markdown
+   # What2Eat — Personal Overrides
+
+   User: [name]
+
+   ## Custom Instructions
+   (Add any personal instructions or overrides here. This file is never overwritten by /sync.)
+   ```
+3. **Remove dev-only files**: Delete `README.md` and `tasks/` directory (if they exist)
+4. **Add template remote**: `git remote add template https://github.com/richardzhuang0412/What2Eat.git`
+   - If the user forked from a different repo, ask for the URL
+5. **Commit**: `setup: initialize data repo from template`
+
+If `CLAUDE.app.md` does NOT exist (repo already initialized), skip this stage silently and proceed to Stage 1.
 
 ### Stage 1 — Dietary Profile
 
