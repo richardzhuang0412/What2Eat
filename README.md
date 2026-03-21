@@ -10,31 +10,29 @@ All data is stored as human-readable YAML and Markdown files, version-controlled
 
 ## Getting Started
 
-### 1. Create your instance
+### Quick install (recommended)
 
-Use this repo as a GitHub template, or copy it:
+Have someone tech-savvy run this for you:
 
 ```bash
-cp -r What2Eat ~/What2Eat-data
-cd ~/What2Eat-data
-git init
+bash <(curl -sL https://raw.githubusercontent.com/richardzhuang0412/What2Eat/main/install.sh)
 ```
 
-### 2. Run setup
+Or if you have the repo locally:
 
-Open your new repo in Claude Code and run:
-
-```
-/setup
+```bash
+bash What2Eat/install.sh
 ```
 
-This initializes your repo (renames config files, removes dev artifacts) and walks you through guided onboarding:
-- Dietary restrictions, allergies, likes/dislikes
-- Cooking skill level and equipment
-- Cuisine preferences
-- Current fridge, freezer, and pantry inventory
+This handles all the setup automatically. Then open the created folder in Claude Code and type `/setup`.
 
-### 3. Start using it
+### Manual install
+
+1. Use this repo as a GitHub template (or `cp -r What2Eat ~/What2Eat-data && cd ~/What2Eat-data && git init`)
+2. Open in Claude Code
+3. Run `/setup`
+
+### After setup
 
 Just talk naturally:
 
@@ -42,6 +40,8 @@ Just talk naturally:
 - "What should I eat tonight? Something quick."
 - "Remind me to defrost the salmon tomorrow morning"
 - "I don't like cilantro"
+
+Type `/help` anytime to see what you can do.
 
 ## Components
 
@@ -58,7 +58,8 @@ Each component has a `SKILL.md` that defines how Claude handles requests for tha
 
 | Command | Purpose |
 |---|---|
-| `/setup` | Guided onboarding — initialize repo, configure profile and inventory |
+| `/setup` | Guided onboarding — configure profile and inventory |
+| `/help` | Friendly guide of what you can do |
 | `/sync` | Pull latest framework updates from the template repo |
 
 ## Philosophy

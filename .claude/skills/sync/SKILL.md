@@ -18,6 +18,7 @@ Pull the latest SKILL.md files, skills, and app instructions from the upstream W
 - `.claude/skills/setup/SKILL.md`
 - `.claude/skills/sync/SKILL.md`
 - `.claude/skills/test/SKILL.md`
+- `.claude/skills/help/SKILL.md`
 - `CLAUDE.app.md` → renamed to `CLAUDE.md` (overwrites app instructions)
 
 **Never touched:**
@@ -60,6 +61,7 @@ git show template/main:preferences/SKILL.md > preferences/SKILL.md
 git show template/main:.claude/skills/setup/SKILL.md > .claude/skills/setup/SKILL.md
 git show template/main:.claude/skills/sync/SKILL.md > .claude/skills/sync/SKILL.md
 git show template/main:.claude/skills/test/SKILL.md > .claude/skills/test/SKILL.md
+git show template/main:.claude/skills/help/SKILL.md > .claude/skills/help/SKILL.md
 git show template/main:CLAUDE.app.md > CLAUDE.md
 ```
 

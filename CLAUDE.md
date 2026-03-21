@@ -181,3 +181,4 @@ A component is a feature area with its own SKILL.md and data file(s). Example: a
 | `/setup` | Guided onboarding — initializes a user's data repo |
 | `/sync` | Pull latest framework updates from template |
 | `/test` | Create/teardown a disposable test environment via git worktree |
+| `/help` | Friendly non-technical guide for end users |

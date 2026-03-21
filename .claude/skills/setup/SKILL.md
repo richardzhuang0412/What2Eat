@@ -1,30 +1,37 @@
 ---
 name: setup
-description: Guided onboarding — set up your food profile, cooking setup, and current inventory
+description: Set up your food profile and kitchen inventory — takes just a few minutes
 user-invocable: true
 ---
 
 # /setup — What2Eat Initial Setup
 
-Welcome the user and walk them through setting up their personal eating manager. This is the "registration" step — populate their preferences and initial inventory so the system can start making useful recommendations.
+Welcome the user and walk them through setting up their personal eating manager. This is the first-time experience — make it feel easy and fun, not like filling out a form.
+
+## Tone
+
+- Warm and casual — like a friend helping them organize their kitchen
+- Never mention git, YAML, commits, repos, file paths, or any technical details
+- Keep questions simple and conversational
+- If they give short answers, that's fine — don't push for more
 
 ## Before Starting
 
-1. Read `preferences/profile.yaml` — check if already populated (non-empty lists = already set up)
-2. Read `inventory/current.yaml` — check if items exist
-3. If data already exists, mention it: "Looks like you've already done some setup. Want to start fresh or just update specific sections?"
+1. Check if `CLAUDE.app.md` exists — if so, Stage 0 is needed (first-time from template)
+2. Read `preferences/profile.yaml` — check if already populated
+3. Read `inventory/current.yaml` — check if items exist
+4. If data already exists: "Looks like you've set things up before. Want to start fresh or just update something specific?"
 
-## Setup Flow
+## Stage 0 — Initialize (Silent)
 
-Guide the user through 6 stages using `AskUserQuestion`. Keep it conversational and friendly. The user can skip any stage — just note what was skipped at the end.
+**Only runs if `CLAUDE.app.md` exists.** Do this silently — the user should not see or know about any of this.
 
-### Stage 0 — Initialize Repo
+Say: "Let me get things ready for you..."
 
-This stage transforms the cloned template into a personal data repo. Only runs if `CLAUDE.app.md` exists (i.e., first-time setup from template).
-
-1. **Rename app instructions**: `CLAUDE.app.md` → `CLAUDE.md` (overwrite the dev version)
-2. **Create `CLAUDE.local.md`**: Ask the user their name, then create the file:
-   ```markdown
+Then quietly:
+1. Rename `CLAUDE.app.md` → `CLAUDE.md`
+2. If `CLAUDE.local.md` doesn't exist, ask: "First, what's your name?" — then create:
+   ```
    # What2Eat — Personal Overrides
 
    User: [name]
@@ -32,109 +39,134 @@ This stage transforms the cloned template into a personal data repo. Only runs i
    ## Custom Instructions
    (Add any personal instructions or overrides here. This file is never overwritten by /sync.)
    ```
-3. **Remove dev-only files**: Delete `README.md` and `tasks/` directory (if they exist)
-4. **Add template remote**: `git remote add template https://github.com/richardzhuang0412/What2Eat.git`
-   - If the user forked from a different repo, ask for the URL
-5. **Commit**: `setup: initialize data repo from template`
+3. Remove `README.md` and `tasks/` directory if they exist
+4. Add template remote: `git remote add template https://github.com/richardzhuang0412/What2Eat.git`
+5. Commit silently: `setup: initialize data repo`
 
-If `CLAUDE.app.md` does NOT exist (repo already initialized), skip this stage silently and proceed to Stage 1.
+Then continue to the welcome.
 
-### Stage 1 — Dietary Profile
+## Welcome + Quick or Full
 
-Ask these as a batch (use multiSelect where appropriate):
+Greet the user warmly:
 
-1. **Dietary restrictions**: "Do you follow any dietary restrictions?"
-   - Options: None, Vegetarian, Vegan, Pescatarian, Halal, Kosher, Keto/Low-carb, Gluten-free
-   - multiSelect: true
+"Hi [name]! I'm your personal food assistant. Let me learn a bit about you so I can help you figure out what to eat. This will just take a few minutes."
 
-2. **Allergies**: "Any food allergies I should know about?"
-   - Options: None, Nuts/tree nuts, Shellfish, Dairy/lactose, Gluten/wheat, Eggs, Soy
-   - multiSelect: true
+Then ask:
 
-3. **Dislikes & favorites**: Ask as a free-text follow-up: "Any ingredients you really dislike? And any you especially love?"
-   - Parse the response into `dietary.dislikes` and `dietary.favorites`
+- **Quick setup** — "Just the essentials — any allergies, what equipment you have, and what's in your kitchen. About 2 minutes."
+- **Full setup** — "The whole tour — food preferences, cooking style, cuisines you love, plus your kitchen inventory. About 5 minutes."
 
-### Stage 2 — Cooking Setup
+## Quick Setup Path
 
-1. **Skill level**: "How would you describe your cooking skill?"
-   - Options: Beginner (simple recipes, basic techniques), Intermediate (comfortable with most recipes), Advanced (enjoy complex techniques and cuisines)
+### Q1 — Allergies & restrictions
 
-2. **Equipment**: "What cooking equipment do you have?"
-   - Options: Stove/cooktop, Oven, Microwave, Air fryer, Rice cooker, Instant Pot/pressure cooker, Wok, Grill/BBQ
-   - multiSelect: true
-   - After selection, ask if there's anything else not listed
+"Any foods you can't eat or need to avoid? (allergies, dietary restrictions, etc.)"
 
-3. **Time & servings**: "On a typical weeknight, how much time do you have to cook? And how many people are you usually cooking for?"
-   - Options for time: 15 minutes or less, About 30 minutes, About 45 minutes, An hour or more, No limit
-   - Parse servings from the follow-up or default to 1
+Options (multiSelect): None / Nuts or tree nuts / Shellfish / Dairy or lactose / Gluten / Eggs / Soy
+- Also offer "Other" for: vegetarian, vegan, halal, kosher, keto, etc.
 
-### Stage 3 — Cuisine Preferences
+→ Save to `dietary.allergies` and `dietary.restrictions`
 
-1. **Favorite cuisines**: "What are your go-to cuisines?"
-   - Options: Chinese, Japanese, Korean, Thai/Vietnamese, Indian, Italian, Mexican, Mediterranean, American, French
-   - multiSelect: true
-   - Ask if any unlisted favorites
+### Q2 — Equipment
 
-2. **Want to explore**: "Any cuisines you've been wanting to try more of?"
-   - Free-text or skip
+"What do you have in your kitchen for cooking?"
 
-3. **Avoid**: "Any cuisines you'd rather avoid?"
-   - Free-text or skip
+Options (multiSelect): Stove or cooktop / Oven / Microwave / Air fryer / Rice cooker / Instant Pot or pressure cooker / Wok / Grill
 
-4. **Eating habits**: "Any general notes about how you like to eat? For example: meal prep on weekends, prefer one-pot meals, always want leftovers for lunch, etc."
-   - Free-text, store in `notes`
+→ Save to `cooking.equipment`
 
-### Stage 4 — Current Inventory
+### Q3 — Inventory
 
-This is the most conversational stage. Walk through storage areas one at a time:
+"Now let's see what food you have on hand. Just tell me what's in your fridge, freezer, and pantry — I'll organize it."
 
-1. "Let's do a quick inventory. What's currently in your **fridge**?"
-   - User lists items in natural language
-   - Parse into structured entries following `inventory/SKILL.md` format
-   - Assign tags: [fridge, fresh] + type tags
+Walk through conversationally:
+1. "What's in your **fridge** right now?"
+2. "Anything in the **freezer**?"
+3. "How about **pantry stuff** — rice, pasta, canned goods, snacks?"
+4. "Any **spices or sauces** worth mentioning?"
 
-2. "What about your **freezer**?"
-   - Parse, tag with [freezer, frozen] + type tags
+The user can say "skip" or "that's it" at any point. Parse items following `inventory/SKILL.md` format.
 
-3. "Any **pantry / dry goods**? (rice, pasta, canned goods, etc.)"
-   - Parse, tag with [pantry] + type tags
+→ Then skip to Save & Finish.
 
-4. "How about **spices and condiments**?"
-   - Parse, tag with [spice] or [condiment] + [pantry]
+## Full Setup Path
 
-For each batch:
-- Estimate expiry dates using the shelf life table in `inventory/SKILL.md`
-- Use today's date as `purchased` (approximate is fine for existing items)
-- Keep quantities approximate — "some", "a few" → reasonable defaults
+### Stage 1 — Food Preferences
 
-The user can say "skip" or "that's it" at any point.
+**Q1 — Restrictions**: "Any foods you can't eat or choose not to?"
+- Options (multiSelect): None / Vegetarian / Vegan / Pescatarian / Halal / Kosher / Keto or low-carb / Gluten-free
 
-### Stage 5 — Confirmation & Save
+**Q2 — Allergies**: "Any food allergies?"
+- Options (multiSelect): None / Nuts or tree nuts / Shellfish / Dairy or lactose / Gluten / Eggs / Soy
 
-1. Show a summary of everything collected:
+**Q3 — Dislikes & favorites**: "Any ingredients you really don't like? And any you especially love?"
+- Free-text. Parse into `dietary.dislikes` and `dietary.favorites`.
+
+### Stage 2 — Cooking Style
+
+**Q1 — Skill level**: "How comfortable are you in the kitchen?"
+- Options: Just learning (keep it simple!) / Pretty comfortable (can follow most recipes) / Love cooking (bring on the challenge)
+
+**Q2 — Equipment**: "What cooking equipment do you have?"
+- Options (multiSelect): Stove or cooktop / Oven / Microwave / Air fryer / Rice cooker / Instant Pot or pressure cooker / Wok / Grill
+- Follow up: "Anything else I should know about?"
+
+**Q3 — Time & servings**: "On a typical weeknight, how much time do you have to cook?"
+- Options: 15 minutes or less / About 30 minutes / About 45 minutes / An hour or more / No rush
+- Then: "And how many people are you usually cooking for?"
+
+### Stage 3 — Cuisines
+
+**Q1 — Favorites**: "What kinds of food do you like most?"
+- Options (multiSelect): Chinese / Japanese / Korean / Thai or Vietnamese / Indian / Italian / Mexican / Mediterranean / American / French
+- "Any others I missed?"
+
+**Q2 — Want to try**: "Any cuisines you've been curious about?"
+- Free-text or skip
+
+**Q3 — Avoid**: "Any types of food you'd rather skip?"
+- Free-text or skip
+
+**Q4 — Eating habits**: "Anything else about how you like to eat? Like meal prepping on weekends, always wanting leftovers for lunch, preferring one-pot meals..."
+- Free-text, store in `notes`
+
+### Stage 4 — Inventory
+
+Same as Quick Setup Q3 — walk through fridge, freezer, pantry, spices conversationally.
+
+## Save & Finish
+
+1. Show a friendly summary:
    ```
-   Profile:
-   - Restrictions: vegetarian
-   - Allergies: none
-   - Cooking: intermediate, stove + oven + rice cooker
-   - Cuisines: Chinese, Italian, Japanese
+   Here's what I've got:
 
-   Inventory: 15 items logged (3 fridge, 4 freezer, 5 pantry, 3 spices)
+   About you: no allergies, love garlic and spicy food
+   Kitchen: stove, oven, rice cooker — comfortable cooking, ~30 min on weeknights
+   Favorites: Chinese, Japanese, Italian
+   Kitchen stock: 12 items (chicken, rice, soy sauce, ...)
    ```
 
-2. Ask: "Does this look right? Anything to change?"
+2. "Does that look right? Anything to fix?"
 
-3. Write the data files:
-   - Update `preferences/profile.yaml` with collected preferences
-   - Update `inventory/current.yaml` with inventory items and `last_updated` set to today
+3. Write data files:
+   - `preferences/profile.yaml` — all preference data
+   - `inventory/current.yaml` — inventory items, `last_updated` set to today
 
-4. Commit: `setup: initial profile and inventory for [user]`
+4. Commit silently: `setup: initial profile and inventory for [name]`
 
-5. Close with: "You're all set! You can now ask me things like 'what should I eat tonight?' or tell me when you go shopping. If you need to update anything later, just tell me naturally — no need to run setup again."
+5. Finish with:
+   "You're all set! Here are some things you can say to me anytime:
+   - 'I bought chicken and rice' — I'll update your kitchen
+   - 'What should I eat tonight?' — I'll suggest something based on what you have
+   - 'Remind me to defrost meat tomorrow' — I'll remember for you
 
-## Important Notes
+   Just talk to me like normal. If you ever need this guide again, type /help."
 
-- **Don't overwhelm**: If the user gives short answers, don't push for more detail. Work with what you get.
-- **Be flexible**: If the user wants to do inventory first or skip preferences, that's fine. Adapt the order.
-- **Defaults are fine**: Not everything needs to be filled. Empty lists are valid — they'll get populated organically over time.
-- **Parse generously**: "I have chicken and some veggies" → chicken breast (1 piece, protein, fridge) + mixed vegetables (1 bag, vegetable, fridge). Ask for clarification only when genuinely ambiguous.
+## Important Behavior Notes
+
+- **Never show technical output** — git commits, file paths, YAML structures should be invisible
+- **If the user seems confused**, suggest `/help`
+- **Commits happen silently** — the user should never see commit messages or be asked about them
+- **Parse generously** — "I have chicken and some veggies" → chicken (1 piece, protein, fridge) + mixed vegetables (1 bag, vegetable, fridge). Only clarify when genuinely ambiguous.
+- **Defaults are fine** — empty preferences will fill in naturally over time through conversation
+- **Skipping is okay** — never pressure the user to complete every section
