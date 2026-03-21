@@ -8,7 +8,7 @@ Claude Code is the interface. This repo is the database. You tell Claude what yo
 
 All data is stored as human-readable YAML and Markdown files, version-controlled with git.
 
-## Setup
+## Getting Started
 
 ### 1. Create your instance
 
@@ -20,19 +20,23 @@ cd ~/What2Eat-data
 git init
 ```
 
-### 2. Install the skills
+### 2. Run setup
 
-Copy the skill files to your Claude Code skills directory:
+Open your new repo in Claude Code and run:
 
-**`~/.claude/skills/what2eat-app/SKILL.md`** — Eating manager mode
+```
+/setup
+```
 
-Update the `DATA_REPO` path in the skill file to point to your instance.
-
-**`~/.claude/skills/what2eat-dev/SKILL.md`** — Framework development mode (optional)
+This walks you through a guided onboarding:
+- Dietary restrictions, allergies, likes/dislikes
+- Cooking skill level and equipment
+- Cuisine preferences
+- Current fridge, freezer, and pantry inventory
 
 ### 3. Start using it
 
-In Claude Code, type `/app` to activate eating manager mode. Then just talk naturally:
+Just talk naturally:
 
 - "I bought 2 lbs of chicken breast, a bag of rice, and some broccoli"
 - "What should I eat tonight? Something quick."
@@ -50,12 +54,11 @@ In Claude Code, type `/app` to activate eating manager mode. Then just talk natu
 
 Each component has a `SKILL.md` that defines how Claude handles requests for that feature — data formats, workflows, and rules.
 
-## Mode Switching
+## Skills
 
 | Command | Purpose |
 |---|---|
-| `/app` | Use What2Eat as your eating manager (reads/writes your data repo) |
-| `/dev` | Work on the What2Eat framework itself (improve skills, add features) |
+| `/setup` | Guided onboarding — configure your profile and inventory |
 
 ## Philosophy
 

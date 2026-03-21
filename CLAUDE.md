@@ -8,6 +8,7 @@ When Richard talks to you, identify what he needs and read the relevant SKILL.md
 
 | Request type | Read first | Data files |
 |---|---|---|
+| Initial setup (`/setup`) | `.claude/skills/setup/SKILL.md` | `preferences/profile.yaml`, `inventory/current.yaml` |
 | Shopping/grocery update | `inventory/SKILL.md` | `inventory/current.yaml` |
 | "What should I eat?" | `recipes/SKILL.md` | `inventory/current.yaml`, `preferences/profile.yaml`, `recipes/history.yaml` |
 | Recipe search/save | `recipes/SKILL.md` | `recipes/collection/`, `recipes/history.yaml` |
@@ -38,13 +39,12 @@ This repo is a **template**. It contains the framework (SKILL.md files, workflow
 ### For users
 
 1. Create your own repo from this template (GitHub "Use this template" or copy the directory)
-2. Install the `/app` skill at `~/.claude/skills/what2eat-app/SKILL.md` — update the `DATA_REPO` path to point to your instance
-3. Install the `/dev` skill at `~/.claude/skills/what2eat-dev/SKILL.md` — if you want to contribute to the framework
-4. Use `/app` in Claude Code to start managing your eating
+2. Open your new repo in Claude Code
+3. Run `/setup` to configure your profile and initial inventory
+4. Start talking naturally — "what should I eat tonight?"
 
-### Mode switching
+### Available Skills
 
 | Skill | Purpose |
 |---|---|
-| `/app` | Eating manager mode — reads/writes your personal data repo |
-| `/dev` | Framework development mode — improves SKILL.md files, workflows, CLAUDE.md |
+| `/setup` | Guided onboarding — set up your food profile, cooking setup, and current inventory |
