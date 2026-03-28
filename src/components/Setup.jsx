@@ -196,20 +196,22 @@ function DietaryStep({ restrictions, toggleRestriction, allergies, toggleAllergy
       <div className="space-y-5">
         <div>
           <label className="text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wide">Dietary restrictions</label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {['Vegetarian', 'Vegan', 'Pescatarian', 'Halal', 'Kosher', 'Keto', 'Gluten-free'].map(r => (
-              <Chip key={r} label={r} selected={restrictions.includes(r.toLowerCase())} onClick={() => toggleRestriction(r.toLowerCase())} />
-            ))}
-          </div>
+          <ChipGroup
+            presets={['Vegetarian', 'Vegan', 'Pescatarian', 'Halal', 'Kosher', 'Keto', 'Gluten-free']}
+            selected={restrictions}
+            onToggle={toggleRestriction}
+            placeholder="Other restriction..."
+          />
         </div>
 
         <div>
           <label className="text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wide">Allergies</label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {['Nuts', 'Shellfish', 'Dairy', 'Gluten', 'Eggs', 'Soy'].map(a => (
-              <Chip key={a} label={a} selected={allergies.includes(a.toLowerCase())} onClick={() => toggleAllergy(a.toLowerCase())} />
-            ))}
-          </div>
+          <ChipGroup
+            presets={['Nuts', 'Shellfish', 'Dairy', 'Gluten', 'Eggs', 'Soy']}
+            selected={allergies}
+            onToggle={toggleAllergy}
+            placeholder="Other allergy..."
+          />
         </div>
 
         <div>
@@ -271,11 +273,12 @@ function CookingStep({ skillLevel, setSkillLevel, equipment, toggleEquipment, pr
 
         <div>
           <label className="text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wide">Equipment</label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {['Stove', 'Oven', 'Microwave', 'Air fryer', 'Rice cooker', 'Instant Pot', 'Wok', 'Grill'].map(e => (
-              <Chip key={e} label={e} selected={equipment.includes(e.toLowerCase())} onClick={() => toggleEquipment(e.toLowerCase())} />
-            ))}
-          </div>
+          <ChipGroup
+            presets={['Stove', 'Oven', 'Microwave', 'Air fryer', 'Rice cooker', 'Instant Pot', 'Wok', 'Grill']}
+            selected={equipment}
+            onToggle={toggleEquipment}
+            placeholder="Other equipment..."
+          />
         </div>
 
         <div className="flex gap-4">
@@ -322,11 +325,12 @@ function CuisinesStep({ favCuisines, toggleCuisine, wantToTry, setWantToTry, not
       <div className="space-y-5">
         <div>
           <label className="text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wide">Favorite cuisines</label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {['Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Indian', 'Italian', 'Mexican', 'Mediterranean', 'American', 'French'].map(c => (
-              <Chip key={c} label={c} selected={favCuisines.includes(c.toLowerCase())} onClick={() => toggleCuisine(c.toLowerCase())} />
-            ))}
-          </div>
+          <ChipGroup
+            presets={['Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Indian', 'Italian', 'Mexican', 'Mediterranean', 'American', 'French']}
+            selected={favCuisines}
+            onToggle={toggleCuisine}
+            placeholder="Other cuisine..."
+          />
         </div>
 
         <div>
@@ -382,18 +386,99 @@ function DoneStep({ name }) {
   )
 }
 
-function Chip({ label, selected, onClick }) {
+function Chip({ label, selected, onClick, onRemove }) {
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1 ${
         selected
           ? 'bg-[var(--color-sage)] text-white'
           : 'bg-[var(--color-cream)] text-[var(--color-text-light)] hover:bg-[var(--color-peach)]/40'
       }`}
     >
       {label}
+      {onRemove && selected && (
+        <span
+          onClick={(e) => { e.stopPropagation(); onRemove() }}
+          className="ml-0.5 hover:opacity-70"
+        >
+          ×
+        </span>
+      )}
     </button>
+  )
+}
+
+/**
+ * A group of selectable chips with an inline "add custom" input.
+ * `presets` are the built-in options, `selected` are currently chosen values,
+ * `onToggle(value)` toggles a value on/off.
+ */
+function ChipGroup({ presets, selected, onToggle, placeholder = 'Add custom...' }) {
+  const [customInput, setCustomInput] = useState('')
+  const [showInput, setShowInput] = useState(false)
+
+  const handleAddCustom = () => {
+    const val = customInput.trim().toLowerCase()
+    if (val && !selected.includes(val)) {
+      onToggle(val)
+    }
+    setCustomInput('')
+    setShowInput(false)
+  }
+
+  // Custom items = selected items not in presets
+  const presetValues = presets.map(p => p.toLowerCase())
+  const customItems = selected.filter(s => !presetValues.includes(s))
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {presets.map(p => (
+        <Chip
+          key={p}
+          label={p}
+          selected={selected.includes(p.toLowerCase())}
+          onClick={() => onToggle(p.toLowerCase())}
+        />
+      ))}
+      {customItems.map(c => (
+        <Chip
+          key={c}
+          label={c}
+          selected={true}
+          onClick={() => onToggle(c)}
+          onRemove={() => onToggle(c)}
+        />
+      ))}
+      {showInput ? (
+        <div className="flex items-center gap-1">
+          <input
+            type="text"
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddCustom()
+              if (e.key === 'Escape') { setShowInput(false); setCustomInput('') }
+            }}
+            onBlur={() => { if (customInput.trim()) handleAddCustom(); else setShowInput(false) }}
+            placeholder={placeholder}
+            autoFocus
+            className="px-2 py-1 rounded-full text-xs bg-[var(--color-cream)] border border-[var(--color-sage)]/50
+                       text-[var(--color-text)] placeholder:text-[var(--color-text-light)]/40
+                       focus:outline-none w-28"
+          />
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowInput(true)}
+          className="px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-[var(--color-peach)]
+                     text-[var(--color-text-light)] hover:border-[var(--color-sage)] hover:text-[var(--color-sage-dark)]
+                     transition-colors cursor-pointer"
+        >
+          + Add
+        </button>
+      )}
+    </div>
   )
 }
 
