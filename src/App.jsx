@@ -1,10 +1,12 @@
-import { useState, useCallback, useRef, Component } from 'react'
+import { useState, useCallback, useRef, useEffect, Component } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import Sidebar from './components/Sidebar'
 import Chat from './components/Chat'
 import Inventory from './components/Inventory'
 import Recipes from './components/Recipes'
 import Reminders from './components/Reminders'
 import Settings from './components/Settings'
+import Setup from './components/Setup'
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -66,18 +68,32 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
 }
 
 function App() {
+  const [needsSetup, setNeedsSetup] = useState(null) // null = checking, true/false
   const [activeView, setActiveView] = useState('chat')
   const [chatPrompt, setChatPrompt] = useState(null)
   const [pendingPrompt, setPendingPrompt] = useState(null)
   const chatHasConversationRef = useRef(false)
 
-  // Called by Chat to report whether it has an active conversation
+  // Check if first-run setup is needed
+  useEffect(() => {
+    async function checkSetup() {
+      try {
+        // If CLAUDE.local.md exists, user has completed setup
+        const exists = await invoke('data_file_exists', { relativePath: 'CLAUDE.local.md' })
+        setNeedsSetup(!exists)
+      } catch {
+        // If we can't check, assume setup is done
+        setNeedsSetup(false)
+      }
+    }
+    checkSetup()
+  }, [])
+
   const handleChatStateChange = useCallback((hasConversation) => {
     chatHasConversationRef.current = hasConversation
   }, [])
 
   const goToChat = useCallback((prompt) => {
-    // If there's an active conversation, ask for confirmation
     if (chatHasConversationRef.current) {
       setPendingPrompt(prompt)
     } else {
@@ -92,6 +108,28 @@ function App() {
     setPendingPrompt(null)
   }, [pendingPrompt])
 
+  // Loading state while checking setup
+  if (needsSetup === null) {
+    return (
+      <div className="h-screen bg-[var(--color-cream)] flex items-center justify-center">
+        <div className="text-center">
+          <span className="text-4xl">🍳</span>
+          <p className="text-sm text-[var(--color-text-light)] mt-3 animate-pulse">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // First-run setup
+  if (needsSetup) {
+    return (
+      <ErrorBoundary>
+        <Setup onComplete={() => setNeedsSetup(false)} />
+      </ErrorBoundary>
+    )
+  }
+
+  // Main app
   return (
     <div className="flex h-screen bg-[var(--color-cream)]">
       <Sidebar activeView={activeView} onNavigate={setActiveView} />
@@ -111,7 +149,6 @@ function App() {
         </ErrorBoundary>
       </main>
 
-      {/* Confirmation dialog */}
       {pendingPrompt && (
         <ConfirmDialog
           message="You have an active conversation. Starting a new request will add to it. Continue?"
