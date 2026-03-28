@@ -43,7 +43,28 @@ function Settings() {
         return
       }
       const result = await invoke('import_data', { sourcePath: filePath })
-      setStatus({ type: 'success', text: result })
+
+      // Parse imported file list from result
+      const match = result.match(/Imported \d+ files: (.+)/)
+      const importedFiles = match ? match[1].split(', ') : []
+
+      setStatus({ type: 'success', text: result + '\nValidating data schema...' })
+
+      // Run schema validation via Claude
+      if (importedFiles.length > 0) {
+        try {
+          const validation = await invoke('validate_imported_data', { importedFiles })
+          setStatus({ type: 'success', text: result + '\n' + validation })
+        } catch (valErr) {
+          setStatus({
+            type: 'warning',
+            text: result + '\nSchema validation failed — data imported but may need manual review: ' +
+              (typeof valErr === 'string' ? valErr : valErr?.message || 'unknown error')
+          })
+        }
+      } else {
+        setStatus({ type: 'success', text: result })
+      }
     } catch (err) {
       setStatus({ type: 'error', text: typeof err === 'string' ? err : err?.message || 'Import failed' })
     } finally {
@@ -71,10 +92,12 @@ function Settings() {
 
       {/* Status message */}
       {status && (
-        <div className={`mb-4 p-3 rounded-xl text-sm ${
+        <div className={`mb-4 p-3 rounded-xl text-sm whitespace-pre-wrap ${
           status.type === 'success'
             ? 'bg-green-50 text-green-800 border border-green-200/50'
-            : 'bg-red-50 text-red-800 border border-red-200/50'
+            : status.type === 'warning'
+              ? 'bg-amber-50 text-amber-800 border border-amber-200/50'
+              : 'bg-red-50 text-red-800 border border-red-200/50'
         }`}>
           {status.text}
         </div>

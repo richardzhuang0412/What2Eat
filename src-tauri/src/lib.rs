@@ -228,6 +228,67 @@ async fn import_data(source_path: String) -> Result<String, String> {
     Ok(format!("Imported {} files: {}", allowed.len(), allowed.join(", ")))
 }
 
+/// Validate and migrate imported data by running Claude against the SKILL.md schemas.
+/// Returns Claude's response describing what was fixed (or "all good").
+#[command]
+async fn validate_imported_data(imported_files: Vec<String>) -> Result<String, String> {
+    let data_dir = get_data_dir_path()?;
+
+    // Build a prompt that asks Claude to validate each imported file against its schema
+    let mut file_contents = String::new();
+    for file in &imported_files {
+        let path = data_dir.join(file);
+        if path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                file_contents.push_str(&format!("\n--- {} ---\n{}\n", file, content));
+            }
+        }
+    }
+
+    if file_contents.is_empty() {
+        return Ok("No files to validate".to_string());
+    }
+
+    let prompt = format!(
+        "I just imported data files into What2Eat. Check each file against the expected schema \
+        defined in the corresponding SKILL.md and fix any issues:\n\
+        - Missing required fields: add with sensible defaults\n\
+        - Unknown fields: remove them\n\
+        - Wrong types (e.g. string where number expected): convert\n\
+        - Dates as Date objects: ensure they're strings like \"2026-03-28\"\n\
+        \n\
+        Read each SKILL.md first for the expected format, then read and fix each imported file. \
+        If everything is valid, just say \"All data looks good, no fixes needed.\" \
+        If you fix anything, briefly describe what you changed.\n\
+        \n\
+        Imported files:\n{}", file_contents
+    );
+
+    let output = StdCommand::new("claude")
+        .args([
+            "--print",
+            "--output-format", "text",
+            "--allowedTools", "Read,Write,Edit",
+            "--model", "sonnet",
+            "--dangerously-skip-permissions",
+            "--no-session-persistence",
+            "--disable-slash-commands",
+            "-p", &prompt,
+        ])
+        .current_dir(&data_dir)
+        .output()
+        .map_err(|e| format!("Validation failed: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Validation error: {}", stderr.chars().take(300).collect::<String>()));
+    }
+
+    Ok(if stdout.is_empty() { "Validation complete".to_string() } else { stdout })
+}
+
 /// Reset all user data to empty defaults. Does not touch framework files.
 #[command]
 async fn reset_data() -> Result<String, String> {
@@ -286,7 +347,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             invoke_claude, check_claude, get_data_dir,
             read_data_file, write_data_file, data_file_exists, list_data_dir,
-            export_data, import_data, reset_data
+            export_data, import_data, validate_imported_data, reset_data
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
