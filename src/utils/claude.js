@@ -74,7 +74,6 @@ export async function sendMessage(userMessage) {
     '--add-dir', 'data',
     '--model', 'sonnet',
     '--dangerously-skip-permissions',
-    '--bare',
     '--no-session-persistence',
     '-p', userMessage,
   ]
