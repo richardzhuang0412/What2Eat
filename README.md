@@ -17,28 +17,76 @@ Talk naturally about food and your assistant manages everything: grocery trackin
 - **Export/import** — backup and restore your data as a tar.gz archive
 - **Schema validation** — imported data auto-fixed by Claude if formats don't match
 
-## Prerequisites
-
-- **macOS** (Windows/Linux support planned)
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and logged in
-- [Node.js](https://nodejs.org/) 18+
-- [Rust](https://rustup.rs/) toolchain
-
 ## Quick Start
 
+### Step 1: Install prerequisites
+
+<details>
+<summary><strong>Already have Node, Rust, and Claude CLI?</strong> Skip to Step 2.</summary>
+
+#### Install Xcode Command Line Tools (macOS)
+
+Open Terminal and run:
 ```bash
-# Clone the repo
+xcode-select --install
+```
+Click "Install" when the popup appears. This provides the compilers needed to build the app.
+
+#### Install Node.js
+
+Download and install from [nodejs.org](https://nodejs.org/) (pick the LTS version). Or with Homebrew:
+```bash
+brew install node
+```
+
+#### Install Rust
+
+Open Terminal and run:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+Follow the prompts (press Enter for defaults). Then restart your terminal or run:
+```bash
+source $HOME/.cargo/env
+```
+
+#### Install Claude Code CLI
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+Then log in:
+```bash
+claude /login
+```
+Follow the browser prompts to authenticate.
+
+#### Install Tauri CLI
+
+```bash
+cargo install tauri-cli --version "^2"
+```
+This takes a few minutes on first install.
+
+</details>
+
+### Step 2: Get the app
+
+```bash
 git clone https://github.com/richardzhuang0412/What2Eat.git
 cd What2Eat
-
-# Install dependencies
 npm install
+```
 
-# Run the app
+### Step 3: Run it
+
+```bash
 cargo tauri dev
 ```
 
 The setup wizard will guide you through configuring your profile on first launch.
+
+> **Note:** The first build takes a few minutes to compile Rust dependencies. Subsequent launches are fast.
 
 ## How It Works
 
