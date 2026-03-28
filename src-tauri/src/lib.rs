@@ -5,9 +5,12 @@ use tauri::command;
 /// discovers chef context (data/CLAUDE.md), not dev context (root CLAUDE.md).
 #[command]
 async fn invoke_claude(args: Vec<String>) -> Result<String, String> {
+    // Tauri's CWD is src-tauri/, so go up one level to project root
     let data_dir = std::env::current_dir()
         .map_err(|e| format!("Failed to get cwd: {}", e))?
-        .join("data");
+        .parent()
+        .map(|p| p.join("data"))
+        .unwrap_or_else(|| std::path::PathBuf::from("data"));
 
     if !data_dir.exists() {
         return Err(format!("Data directory not found: {:?}", data_dir));
