@@ -1,15 +1,23 @@
 import { useState, useRef, useEffect } from 'react'
 import { useClaudeChat } from '../hooks/useClaudeChat'
 
-function Chat() {
+function Chat({ initialPrompt, onPromptConsumed }) {
   const { messages, isThinking, error, send, clear } = useClaudeChat()
   const [input, setInput] = useState('')
   const messagesEndRef = useRef(null)
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isThinking])
+
+  // Handle prompts from other panels
+  useEffect(() => {
+    if (initialPrompt && !isThinking) {
+      send(initialPrompt)
+      onPromptConsumed?.()
+    }
+  }, [initialPrompt])
 
   const handleSend = () => {
     if (!input.trim() || isThinking) return
@@ -25,7 +33,7 @@ function Chat() {
           <span className="text-lg">👨‍🍳</span>
           <span className="font-medium text-sm text-[var(--color-text)]">Chef</span>
           {isThinking && (
-            <span className="text-xs text-[var(--color-text-light)] animate-pulse">typing...</span>
+            <span className="text-xs text-[var(--color-text-light)] animate-pulse">cooking up a reply...</span>
           )}
         </div>
         <button
@@ -36,7 +44,7 @@ function Chat() {
         </button>
       </div>
 
-      {/* Messages area */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {messages.map((msg, i) => (
           <div
@@ -53,13 +61,25 @@ function Chat() {
                   ? 'bg-[var(--color-sage)] text-white rounded-br-md'
                   : 'bg-white text-[var(--color-text)] rounded-bl-md shadow-sm border border-[var(--color-peach)]/30'
                 }
-                ${msg.streaming ? 'animate-pulse' : ''}
               `}
             >
-              {msg.text || (msg.streaming ? '...' : '')}
+              {msg.text || '...'}
             </div>
           </div>
         ))}
+
+        {isThinking && !messages[messages.length - 1]?.streaming && (
+          <div className="flex justify-start">
+            <span className="text-lg mr-2 mt-1">👨‍🍳</span>
+            <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-md shadow-sm border border-[var(--color-peach)]/30">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-[var(--color-peach)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-[var(--color-peach)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-[var(--color-peach)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="text-center">
@@ -70,7 +90,7 @@ function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
+      {/* Input */}
       <div className="px-4 py-4 border-t border-[var(--color-peach)]/30">
         <div className="flex gap-3">
           <input
@@ -96,22 +116,23 @@ function Chat() {
           </button>
         </div>
 
-        {/* Quick suggestions */}
+        {/* Quick suggestions — only when chat is fresh */}
         {messages.length <= 1 && (
           <div className="flex gap-2 mt-3 flex-wrap">
             {[
               "What should I eat tonight?",
-              "What's in my fridge?",
+              "What's expiring soon?",
               "Something quick with chicken",
-            ].map((suggestion) => (
+              "I went grocery shopping",
+            ].map((s) => (
               <button
-                key={suggestion}
-                onClick={() => { setInput(suggestion); }}
+                key={s}
+                onClick={() => setInput(s)}
                 className="text-xs px-3 py-1.5 rounded-full bg-[var(--color-peach)]/30
                            text-[var(--color-text-light)] hover:bg-[var(--color-peach)]/60
                            transition-colors cursor-pointer"
               >
-                {suggestion}
+                {s}
               </button>
             ))}
           </div>
