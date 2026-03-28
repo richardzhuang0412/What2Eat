@@ -21,8 +21,10 @@ Talk naturally about food and your assistant manages everything: grocery trackin
 
 ### Step 1: Install prerequisites
 
+You'll need: **macOS**, **Node.js 18+**, **Rust**, **Claude Code CLI** (logged in), and **Tauri CLI**.
+
 <details>
-<summary><strong>Already have Node, Rust, and Claude CLI?</strong> Skip to Step 2.</summary>
+<summary>Installation instructions (click to expand)</summary>
 
 #### Install Xcode Command Line Tools (macOS)
 
