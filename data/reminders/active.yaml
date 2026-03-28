@@ -1,13 +1,1 @@
-reminders:
-  - id: 1
-    created: "2026-03-28"
-    due: "2026-03-28T18:00"
-    text: Defrost chicken breast for tonight's dinner
-    status: pending
-    context: Planning stir-fry
-  - id: 2
-    created: "2026-03-28"
-    due: "2026-03-29"
-    text: Go grocery shopping — running low on vegetables
-    status: pending
-    context: ""
+reminders: []

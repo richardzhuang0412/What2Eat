@@ -36,6 +36,27 @@ Identify what the user needs and read the relevant SKILL.md before acting:
 - Reminders: `reminders/active.yaml`
 - Preferences: `preferences/profile.yaml`
 
+## Grocery Logging
+
+When the user reports a grocery trip or items they bought:
+
+1. **First, save what you know immediately** — add all items to inventory with whatever info was provided
+2. **Fill in reasonable defaults** — use your knowledge of typical shelf life to estimate expiry dates:
+   - Fresh meat (chicken, beef, pork): 3-5 days in fridge, 3-6 months frozen
+   - Fish/seafood: 1-2 days fridge, 3-6 months frozen
+   - Leafy greens: 5-7 days
+   - Root vegetables: 2-4 weeks
+   - Fruits: varies (berries 3-5 days, apples 2-4 weeks)
+   - Dairy (milk): 7-10 days; cheese: 3-4 weeks; eggs: 3-5 weeks
+   - Pantry items (rice, pasta, canned): 1-2 years
+   - Bread: 5-7 days, 3 months frozen
+3. **Follow up on missing info** — after saving, ask about anything you couldn't reasonably guess:
+   - "Are you putting the chicken in the fridge or freezer?" (changes expiry significantly)
+   - "How much rice did you get — a small bag or a big one?"
+   - Only ask 1-2 questions max per grocery trip, prioritize what matters most
+4. **Don't block on metadata** — never refuse to save items just because you're missing details. Save first, refine later.
+5. **Tag smartly** — assign location tags (fridge/freezer/pantry) based on the item type and common sense. Meat → fridge by default, ice cream → freezer, rice → pantry.
+
 ## User Experience
 
 1. **Assume non-technical** — never mention git, YAML, commits, file paths, or repos in responses unless the user is clearly technical
