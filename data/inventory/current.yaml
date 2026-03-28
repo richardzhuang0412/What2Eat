@@ -1,2 +1,16 @@
-last_updated: null
-items: []
+last_updated: 2026-03-28
+items:
+  - name: chicken tender breast
+    quantity: 2
+    unit: lbs
+    tags: [protein, fridge, fresh]
+    purchased: 2026-03-28
+    expires: 2026-03-31
+    notes: ""
+  - name: cucumber
+    quantity: 1
+    unit: piece
+    tags: [vegetable, fridge, fresh]
+    purchased: 2026-03-28
+    expires: 2026-04-04
+    notes: ""

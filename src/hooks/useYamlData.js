@@ -3,12 +3,7 @@ import { readYaml } from '../utils/yaml'
 
 /**
  * Hook to read and reactively update YAML data.
- * Polls the file at a configurable interval since Tauri file watching
- * requires more setup. Polling is simple and reliable for our use case.
- *
- * @param {string} relativePath - Path relative to data/ directory
- * @param {number} pollInterval - Polling interval in ms (default 2000)
- * @returns {{ data, loading, error, refresh }}
+ * Polls the file at a configurable interval.
  */
 export function useYamlData(relativePath, pollInterval = 2000) {
   const [data, setData] = useState(null)
@@ -27,12 +22,8 @@ export function useYamlData(relativePath, pollInterval = 2000) {
     }
   }, [relativePath])
 
-  // Initial load
-  useEffect(() => {
-    refresh()
-  }, [refresh])
+  useEffect(() => { refresh() }, [refresh])
 
-  // Poll for changes
   useEffect(() => {
     const interval = setInterval(refresh, pollInterval)
     return () => clearInterval(interval)

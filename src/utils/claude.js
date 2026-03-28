@@ -1,21 +1,17 @@
 import { invoke } from '@tauri-apps/api/core'
-import { readTextFile, exists } from '@tauri-apps/plugin-fs'
-import { getDataDir, dataPath } from './paths'
 
 /**
- * Build the system prompt by reading CLAUDE.md and relevant SKILL.md files.
+ * Build the system prompt by reading CLAUDE.md and SKILL.md files via Rust.
  */
 async function buildSystemPrompt() {
   const parts = []
 
-  await getDataDir() // ensure path cache
-
-  // Read main CLAUDE.md (from data/ — the chef instructions)
+  // Read main CLAUDE.md (chef instructions)
   try {
-    const claudeMd = await readTextFile(dataPath('CLAUDE.md'))
+    const claudeMd = await invoke('read_data_file', { relativePath: 'CLAUDE.md' })
     parts.push(claudeMd)
   } catch (e) {
-    console.warn('[Claude] Could not read data/CLAUDE.md:', e)
+    console.warn('[Claude] Could not read CLAUDE.md:', e)
     parts.push('You are a personal eating manager and chef assistant.')
   }
 
@@ -29,11 +25,8 @@ async function buildSystemPrompt() {
 
   for (const file of skillFiles) {
     try {
-      const path = dataPath(file)
-      if (await exists(path)) {
-        const content = await readTextFile(path)
-        parts.push(`\n---\n## ${file}\n${content}`)
-      }
+      const content = await invoke('read_data_file', { relativePath: file })
+      parts.push(`\n---\n## ${file}\n${content}`)
     } catch {
       // Skip missing files
     }
@@ -45,8 +38,8 @@ async function buildSystemPrompt() {
 ## Response Guidelines
 
 You are responding through a desktop app chat interface, not a CLI.
-All data files are in the current working directory (which is the data/ folder).
-When reading or writing files, use paths relative to the current directory — e.g. inventory/current.yaml, not data/inventory/current.yaml.
+All data files are in the current working directory.
+When reading or writing files, use paths like inventory/current.yaml, recipes/history.yaml, etc.
 
 - Keep responses conversational and concise (2-4 sentences for simple questions)
 - Use plain text only — no markdown headers, bold, or code blocks

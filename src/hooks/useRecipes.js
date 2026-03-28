@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { readDir, readTextFile, exists } from '@tauri-apps/plugin-fs'
-import { getDataDir, dataPath } from '../utils/paths'
+import { invoke } from '@tauri-apps/api/core'
 import { parseFrontmatter } from '../utils/yaml'
 
 /**
  * Hook to read all saved recipes from data/recipes/collection/.
- * Parses frontmatter from each .md file.
  */
 export function useRecipes(pollInterval = 5000) {
   const [recipes, setRecipes] = useState([])
@@ -13,25 +11,18 @@ export function useRecipes(pollInterval = 5000) {
 
   const refresh = useCallback(async () => {
     try {
-      await getDataDir() // ensure path cache is populated
-      const collectionPath = dataPath('recipes/collection')
-      const dirExists = await exists(collectionPath)
-      if (!dirExists) {
-        setRecipes([])
-        setLoading(false)
-        return
-      }
-
-      const entries = await readDir(collectionPath)
-      const mdFiles = entries.filter(e => e.name?.endsWith('.md') && e.name !== '.gitkeep')
+      const files = await invoke('list_data_dir', { relativePath: 'recipes/collection' })
+      const mdFiles = files.filter(f => f.endsWith('.md') && f !== '.gitkeep')
 
       const loaded = await Promise.all(
-        mdFiles.map(async (entry) => {
+        mdFiles.map(async (filename) => {
           try {
-            const content = await readTextFile(`${collectionPath}/${entry.name}`)
+            const content = await invoke('read_data_file', {
+              relativePath: `recipes/collection/${filename}`
+            })
             const { frontmatter, content: body } = parseFrontmatter(content)
             return {
-              slug: entry.name.replace('.md', ''),
+              slug: filename.replace('.md', ''),
               ...frontmatter,
               body,
             }
@@ -43,7 +34,10 @@ export function useRecipes(pollInterval = 5000) {
 
       setRecipes(loaded.filter(Boolean))
     } catch (err) {
-      console.error('Failed to load recipes:', err)
+      // Directory not found is expected when empty
+      if (!(typeof err === 'string' && err.includes('not found'))) {
+        console.error('Failed to load recipes:', err)
+      }
       setRecipes([])
     } finally {
       setLoading(false)

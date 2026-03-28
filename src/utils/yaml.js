@@ -1,31 +1,18 @@
 import yaml from 'js-yaml'
-import { readTextFile, writeTextFile, exists } from '@tauri-apps/plugin-fs'
-import { getDataDir, dataPath } from './paths'
-
-// Ensure data dir is resolved before first use
-let initialized = false
-async function ensureInit() {
-  if (!initialized) {
-    await getDataDir()
-    initialized = true
-  }
-}
+import { invoke } from '@tauri-apps/api/core'
 
 /**
  * Read and parse a YAML file from the data directory.
- * Returns null if the file doesn't exist.
+ * Uses Rust command to bypass Tauri fs plugin scope restrictions.
  */
 export async function readYaml(relativePath) {
-  await ensureInit()
-  const path = dataPath(relativePath)
   try {
-    const fileExists = await exists(path)
-    if (!fileExists) return null
-
-    const content = await readTextFile(path)
+    const content = await invoke('read_data_file', { relativePath })
     return yaml.load(content)
   } catch (err) {
-    console.error(`Failed to read ${path}:`, err)
+    // "File not found" is expected for empty/new installs
+    if (typeof err === 'string' && err.includes('not found')) return null
+    console.error(`[YAML] Failed to read ${relativePath}:`, err)
     return null
   }
 }
@@ -34,18 +21,16 @@ export async function readYaml(relativePath) {
  * Write a JavaScript object as YAML to a file in the data directory.
  */
 export async function writeYaml(relativePath, data) {
-  await ensureInit()
-  const path = dataPath(relativePath)
   try {
     const content = yaml.dump(data, {
       lineWidth: -1,
       noRefs: true,
       quotingType: '"',
     })
-    await writeTextFile(path, content)
+    await invoke('write_data_file', { relativePath, content })
     return true
   } catch (err) {
-    console.error(`Failed to write ${path}:`, err)
+    console.error(`[YAML] Failed to write ${relativePath}:`, err)
     return false
   }
 }
@@ -54,22 +39,17 @@ export async function writeYaml(relativePath, data) {
  * Read a markdown file from the data directory.
  */
 export async function readMarkdown(relativePath) {
-  await ensureInit()
-  const path = dataPath(relativePath)
   try {
-    const fileExists = await exists(path)
-    if (!fileExists) return null
-
-    return await readTextFile(path)
+    return await invoke('read_data_file', { relativePath })
   } catch (err) {
-    console.error(`Failed to read ${path}:`, err)
+    if (typeof err === 'string' && err.includes('not found')) return null
+    console.error(`[YAML] Failed to read ${relativePath}:`, err)
     return null
   }
 }
 
 /**
  * Parse YAML frontmatter from a markdown string.
- * Returns { frontmatter: {}, content: "" }
  */
 export function parseFrontmatter(markdown) {
   if (!markdown) return { frontmatter: {}, content: '' }
