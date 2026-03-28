@@ -15,7 +15,7 @@ export default defineConfig({
       ? { protocol: 'ws', host, port: 5174 }
       : undefined,
     watch: {
-      ignored: ['**/src-tauri/**'],
+      ignored: ['**/src-tauri/**', '**/data/**'],
     },
   },
 })

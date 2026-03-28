@@ -1,5 +1,19 @@
 last_updated: "2026-03-28"
 items:
+  - name: whole chicken
+    quantity: 1
+    unit: piece
+    tags: [protein, fridge]
+    purchased: "2026-03-28"
+    expires: "2026-03-31"
+    notes: ""
+  - name: lemons
+    quantity: 3
+    unit: pieces
+    tags: [fruit, fridge]
+    purchased: "2026-03-28"
+    expires: "2026-04-11"
+    notes: ""
   - name: chicken breast
     quantity: 4
     unit: lbs
@@ -15,12 +29,12 @@ items:
     expires: "2027-03-20"
     notes: ""
   - name: broccoli
-    quantity: 1
+    quantity: 2
     unit: bunch
     tags: [vegetable, fridge]
     purchased: "2026-03-27"
     expires: "2026-04-02"
-    notes: ""
+    notes: "1 additional bunch added 2026-03-28"
   - name: frozen shrimp
     quantity: 1
     unit: bag
@@ -36,12 +50,12 @@ items:
     expires: "2026-09-01"
     notes: "Kikkoman"
   - name: garlic
-    quantity: 1
+    quantity: 2
     unit: bulb
     tags: [vegetable, pantry]
     purchased: "2026-03-25"
     expires: "2026-04-25"
-    notes: ""
+    notes: "1 additional bulb added 2026-03-28"
   - name: eggs
     quantity: 12
     unit: pieces
@@ -62,4 +76,25 @@ items:
     tags: [vegetable, fridge]
     purchased: "2026-03-28"
     expires: "2026-04-04"
+    notes: ""
+  - name: carrots
+    quantity: 1
+    unit: bag
+    tags: [vegetable, fridge]
+    purchased: "2026-03-28"
+    expires: "2026-04-25"
+    notes: ""
+  - name: celery
+    quantity: 1
+    unit: bunch
+    tags: [vegetable, fridge]
+    purchased: "2026-03-28"
+    expires: "2026-04-11"
+    notes: ""
+  - name: onions
+    quantity: 3
+    unit: pieces
+    tags: [vegetable, pantry]
+    purchased: "2026-03-28"
+    expires: "2026-05-28"
     notes: ""

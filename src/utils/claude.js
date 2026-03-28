@@ -1,19 +1,19 @@
 import { Command } from '@tauri-apps/plugin-shell'
-import { readTextFile, writeTextFile, exists } from '@tauri-apps/plugin-fs'
+import { readTextFile, exists } from '@tauri-apps/plugin-fs'
 import { dataPath } from './paths'
 
 /**
  * Build the system prompt by reading CLAUDE.md and relevant SKILL.md files.
- * Writes to a temp file and returns the path, to avoid shell arg length issues.
  */
-async function buildAndWriteSystemPrompt() {
+async function buildSystemPrompt() {
   const parts = []
 
   // Read main CLAUDE.md
   try {
     const claudeMd = await readTextFile(dataPath('CLAUDE.md'))
     parts.push(claudeMd)
-  } catch {
+  } catch (e) {
+    console.warn('[Claude] Could not read CLAUDE.md:', e)
     parts.push('You are a personal eating manager and chef assistant.')
   }
 
@@ -54,48 +54,57 @@ All data files are relative to the current working directory under data/.
 - Today's date is ${new Date().toISOString().split('T')[0]}
 `)
 
-  const prompt = parts.join('\n')
-
-  // Write to a temp file to avoid shell arg length issues
-  const promptPath = dataPath('.system-prompt.tmp')
-  await writeTextFile(promptPath, prompt)
-  return promptPath
+  return parts.join('\n')
 }
 
 /**
  * Send a message to Claude CLI and get a response.
  */
 export async function sendMessage(userMessage) {
-  const promptFilePath = await buildAndWriteSystemPrompt()
+  let systemPrompt
+  try {
+    systemPrompt = await buildSystemPrompt()
+    console.log('[Claude] System prompt built, length:', systemPrompt.length)
+  } catch (e) {
+    console.error('[Claude] Failed to build system prompt:', e)
+    systemPrompt = 'You are a personal eating manager and chef assistant. Today is ' + new Date().toISOString().split('T')[0]
+  }
 
   const args = [
     '--print',
     '--output-format', 'text',
-    '--system-prompt-file', promptFilePath,
+    '--system-prompt', systemPrompt,
     '--allowedTools', 'Read,Write,Edit',
     '--add-dir', 'data',
     '--model', 'sonnet',
     '--dangerously-skip-permissions',
     '--no-session-persistence',
+    '--disable-slash-commands',
     '-p', userMessage,
   ]
 
   console.log('[Claude] Sending message:', userMessage.substring(0, 100))
+  console.log('[Claude] Args count:', args.length)
 
-  const command = Command.create('claude', args)
+  let command
+  try {
+    command = Command.create('claude', args)
+  } catch (e) {
+    console.error('[Claude] Failed to create command:', e)
+    throw e
+  }
 
   try {
+    console.log('[Claude] Executing...')
     const output = await command.execute()
 
     console.log('[Claude] Exit code:', output.code)
-    console.log('[Claude] Stdout length:', output.stdout?.length || 0)
-    if (output.stderr) {
-      console.log('[Claude] Stderr:', output.stderr.substring(0, 500))
-    }
+    console.log('[Claude] Stdout:', output.stdout?.substring(0, 200))
+    console.log('[Claude] Stderr:', output.stderr?.substring(0, 500))
 
     if (output.code !== 0) {
-      console.error('[Claude] Non-zero exit:', output.code, output.stderr)
-      return `Sorry, something went wrong (exit ${output.code}). ${output.stderr || ''}`
+      console.error('[Claude] Non-zero exit:', output.code)
+      return `Sorry, something went wrong. ${output.stderr?.substring(0, 200) || ''}`
     }
 
     if (output.stdout && output.stdout.trim()) {
@@ -104,8 +113,10 @@ export async function sendMessage(userMessage) {
 
     return "Hmm, I didn't get a response. Could you try again?"
   } catch (err) {
-    console.error('[Claude] Execute failed:', err)
-    throw new Error(`Failed to reach Claude: ${err.message || err}`)
+    console.error('[Claude] Execute error:', err)
+    console.error('[Claude] Error type:', typeof err)
+    console.error('[Claude] Error message:', err?.message)
+    throw new Error(`Claude CLI error: ${err?.message || JSON.stringify(err)}`)
   }
 }
 
@@ -116,7 +127,7 @@ export async function isClaudeAvailable() {
   try {
     const command = Command.create('claude-version')
     const output = await command.execute()
-    console.log('[Claude] Version check:', output.code, output.stdout?.trim())
+    console.log('[Claude] Version check - code:', output.code, 'stdout:', output.stdout?.trim())
     return output.code === 0
   } catch (err) {
     console.error('[Claude] Version check failed:', err)

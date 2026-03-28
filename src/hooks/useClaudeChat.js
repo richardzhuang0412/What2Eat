@@ -55,12 +55,13 @@ export function useClaudeChat() {
         { role: 'chef', text: response },
       ])
     } catch (err) {
-      console.error('Chat error:', err)
+      console.error('[Chat] Full error:', err)
+      console.error('[Chat] Error message:', err?.message)
       setMessages((prev) => [
         ...prev,
         {
           role: 'chef',
-          text: "Sorry, something went wrong. Let me try again in a moment.",
+          text: `Sorry, something went wrong: ${err?.message || 'unknown error'}`,
         },
       ])
       setError(err.message)
