@@ -26,6 +26,23 @@ function Sidebar({ activeView, onNavigate }) {
           <span className="font-medium">{item.label}</span>
         </button>
       ))}
+
+      {/* Settings at bottom */}
+      <div className="flex-1" />
+      <button
+        onClick={() => onNavigate('settings')}
+        className={`
+          w-14 h-14 rounded-xl flex flex-col items-center justify-center gap-0.5
+          text-xs transition-all cursor-pointer
+          ${activeView === 'settings'
+            ? 'bg-[var(--color-peach)] text-[var(--color-text)] shadow-sm'
+            : 'text-[var(--color-text-light)] hover:bg-[var(--color-peach)]/40'
+          }
+        `}
+      >
+        <span className="text-lg">⚙️</span>
+        <span className="font-medium">Settings</span>
+      </button>
     </nav>
   )
 }

@@ -125,6 +125,147 @@ async fn get_data_dir() -> Result<String, String> {
     Ok(data_dir.to_string_lossy().to_string())
 }
 
+/// Export user data as a tar.gz file. Only includes user data, not framework files.
+#[command]
+async fn export_data(dest_path: String) -> Result<String, String> {
+    let data_dir = get_data_dir_path()?;
+
+    // Files/patterns to export (user data only)
+    let user_files: Vec<String> = vec![
+        "CLAUDE.local.md",
+        "inventory/current.yaml",
+        "recipes/history.yaml",
+        "reminders/active.yaml",
+        "preferences/profile.yaml",
+    ].into_iter()
+        .map(String::from)
+        .filter(|f| data_dir.join(f).exists())
+        .collect();
+
+    // Also collect recipe collection files
+    let collection_dir = data_dir.join("recipes/collection");
+    let mut recipe_files: Vec<String> = Vec::new();
+    if collection_dir.exists() {
+        if let Ok(entries) = std::fs::read_dir(&collection_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.ends_with(".md") && name != ".gitkeep" {
+                    recipe_files.push(format!("recipes/collection/{}", name));
+                }
+            }
+        }
+    }
+
+    let mut all_files = user_files;
+    all_files.extend(recipe_files);
+
+    if all_files.is_empty() {
+        return Err("No user data to export".to_string());
+    }
+
+    // Create tar.gz using system tar
+    let output = StdCommand::new("tar")
+        .args(["czf", &dest_path])
+        .args(&all_files)
+        .current_dir(&data_dir)
+        .output()
+        .map_err(|e| format!("Failed to create archive: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!("tar failed: {}", String::from_utf8_lossy(&output.stderr)));
+    }
+
+    Ok(format!("Exported {} files to {}", all_files.len(), dest_path))
+}
+
+/// Import user data from a tar.gz file. Only restores user data, never overwrites framework files.
+#[command]
+async fn import_data(source_path: String) -> Result<String, String> {
+    let data_dir = get_data_dir_path()?;
+
+    // First, list contents of the archive
+    let list_output = StdCommand::new("tar")
+        .args(["tzf", &source_path])
+        .output()
+        .map_err(|e| format!("Failed to read archive: {}", e))?;
+
+    if !list_output.status.success() {
+        return Err(format!("Invalid archive: {}", String::from_utf8_lossy(&list_output.stderr)));
+    }
+
+    let files_in_archive = String::from_utf8_lossy(&list_output.stdout).to_string();
+    let file_list: Vec<&str> = files_in_archive.lines().collect();
+
+    // Filter to only allow user data files (block SKILL.md, CLAUDE.md)
+    let allowed: Vec<&str> = file_list.iter()
+        .filter(|f| {
+            !f.ends_with("SKILL.md") &&
+            !f.ends_with("CLAUDE.md") &&  // framework CLAUDE.md, not CLAUDE.local.md
+            !f.contains(".gitkeep")
+        })
+        .copied()
+        .collect();
+
+    if allowed.is_empty() {
+        return Err("No importable user data found in archive".to_string());
+    }
+
+    // Extract only allowed files
+    let mut cmd = StdCommand::new("tar");
+    cmd.args(["xzf", &source_path]);
+    for file in &allowed {
+        cmd.arg(file);
+    }
+    cmd.current_dir(&data_dir);
+
+    let output = cmd.output()
+        .map_err(|e| format!("Failed to extract: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!("Extract failed: {}", String::from_utf8_lossy(&output.stderr)));
+    }
+
+    Ok(format!("Imported {} files: {}", allowed.len(), allowed.join(", ")))
+}
+
+/// Reset all user data to empty defaults. Does not touch framework files.
+#[command]
+async fn reset_data() -> Result<String, String> {
+    let data_dir = get_data_dir_path()?;
+
+    let resets = vec![
+        ("inventory/current.yaml", "last_updated: null\nitems: []\n"),
+        ("recipes/history.yaml", "meals: []\n"),
+        ("reminders/active.yaml", "reminders: []\n"),
+        ("preferences/profile.yaml", "dietary:\n  restrictions: []\n  allergies: []\n  dislikes: []\n  favorites: []\n\ncooking:\n  skill_level: intermediate\n  equipment: []\n  max_prep_time: null\n  default_servings: 1\n\ncuisines:\n  favorites: []\n  want_to_try: []\n  avoid: []\n\nnotes: []\n"),
+    ];
+
+    for (file, content) in &resets {
+        let path = data_dir.join(file);
+        std::fs::write(&path, content)
+            .map_err(|e| format!("Failed to reset {}: {}", file, e))?;
+    }
+
+    // Clear recipe collection (keep .gitkeep)
+    let collection = data_dir.join("recipes/collection");
+    if collection.exists() {
+        for entry in std::fs::read_dir(&collection).map_err(|e| e.to_string())?.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name != ".gitkeep" {
+                std::fs::remove_file(entry.path()).ok();
+            }
+        }
+    }
+
+    // Remove CLAUDE.local.md
+    let local_md = data_dir.join("CLAUDE.local.md");
+    if local_md.exists() {
+        std::fs::remove_file(&local_md).ok();
+    }
+
+    Ok("All user data reset to defaults".to_string())
+}
+
 /// Check if claude CLI is available
 #[command]
 async fn check_claude() -> Result<String, String> {
@@ -141,9 +282,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             invoke_claude, check_claude, get_data_dir,
-            read_data_file, write_data_file, data_file_exists, list_data_dir
+            read_data_file, write_data_file, data_file_exists, list_data_dir,
+            export_data, import_data, reset_data
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

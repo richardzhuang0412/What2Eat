@@ -57,7 +57,7 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
             onClick={clear}
             className="text-xs text-[var(--color-text-light)] hover:text-[var(--color-text)] transition-colors cursor-pointer"
           >
-            Clear chat
+            New chat
           </button>
         </div>
       </div>
