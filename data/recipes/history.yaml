@@ -1,1 +1,6 @@
-meals: []
+meals:
+  - date: 2026-03-28
+    meal: dinner
+    dish: Chicken Cucumber Stir-Fry
+    recipe: collection/chicken-cucumber-stir-fry.md
+    notes: ""

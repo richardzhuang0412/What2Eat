@@ -7,8 +7,8 @@ cook_time: 10min
 servings: 2
 source: https://simplechinesefood.com/recipe/stir-fried-chicken-with-cucumber
 date_saved: 2026-03-28
-times_cooked: 0
-last_cooked: null
+times_cooked: 1
+last_cooked: 2026-03-28
 rating: null
 ---
 
