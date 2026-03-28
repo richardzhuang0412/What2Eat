@@ -1,9 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { sendMessage, isClaudeAvailable } from '../utils/claude'
 
-/**
- * Hook for managing chat with Claude CLI.
- */
 export function useClaudeChat() {
   const [messages, setMessages] = useState([
     {
@@ -13,32 +10,30 @@ export function useClaudeChat() {
   ])
   const [isThinking, setIsThinking] = useState(false)
   const [error, setError] = useState(null)
+  const abortedRef = useRef(false)
+  const lastUserMessageRef = useRef(null)
 
   const send = useCallback(async (userText) => {
     if (!userText.trim() || isThinking) return
 
     setError(null)
+    abortedRef.current = false
+    lastUserMessageRef.current = userText
 
-    // Add user message
     setMessages((prev) => [...prev, { role: 'user', text: userText }])
     setIsThinking(true)
 
     try {
-      // Check Claude is available
       const available = await isClaudeAvailable()
       if (!available) {
         setMessages((prev) => [
           ...prev,
-          {
-            role: 'chef',
-            text: "I can't reach Claude right now. Make sure the Claude CLI is installed and you're logged in.",
-          },
+          { role: 'chef', text: "I can't reach Claude right now. Make sure the Claude CLI is installed and you're logged in." },
         ])
         setIsThinking(false)
         return
       }
 
-      // Build context from recent messages
       const recentContext = messages
         .slice(-6)
         .map((m) => `${m.role === 'user' ? 'User' : 'Chef'}: ${m.text}`)
@@ -50,19 +45,18 @@ export function useClaudeChat() {
 
       const response = await sendMessage(fullPrompt)
 
+      if (abortedRef.current) return // user stopped generation
+
       setMessages((prev) => [
         ...prev,
         { role: 'chef', text: response },
       ])
     } catch (err) {
-      console.error('[Chat] Full error:', err)
-      console.error('[Chat] Error message:', err?.message)
+      if (abortedRef.current) return
+      console.error('[Chat] Error:', err)
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'chef',
-          text: `Sorry, something went wrong: ${err?.message || 'unknown error'}`,
-        },
+        { role: 'chef', text: `Sorry, something went wrong: ${err?.message || 'unknown error'}` },
       ])
       setError(err.message)
     } finally {
@@ -70,15 +64,43 @@ export function useClaudeChat() {
     }
   }, [isThinking, messages])
 
-  const clear = useCallback(() => {
-    setMessages([
-      {
-        role: 'chef',
-        text: "Fresh start! What can I help you with? 🍳",
-      },
+  const stop = useCallback(() => {
+    abortedRef.current = true
+    setIsThinking(false)
+    setMessages((prev) => [
+      ...prev,
+      { role: 'chef', text: "(stopped)" },
     ])
-    setError(null)
   }, [])
 
-  return { messages, isThinking, error, send, clear }
+  const reload = useCallback(() => {
+    if (isThinking || !lastUserMessageRef.current) return
+    // Remove the last chef response and resend
+    setMessages((prev) => {
+      const trimmed = [...prev]
+      // Remove last chef message
+      if (trimmed.length > 0 && trimmed[trimmed.length - 1].role === 'chef') {
+        trimmed.pop()
+      }
+      // Remove last user message (send() will re-add it)
+      if (trimmed.length > 0 && trimmed[trimmed.length - 1].role === 'user') {
+        trimmed.pop()
+      }
+      return trimmed
+    })
+    // Small delay to let state update
+    setTimeout(() => send(lastUserMessageRef.current), 50)
+  }, [isThinking, send])
+
+  const clear = useCallback(() => {
+    setMessages([
+      { role: 'chef', text: "Fresh start! What can I help you with? 🍳" },
+    ])
+    setError(null)
+    lastUserMessageRef.current = null
+  }, [])
+
+  const hasConversation = messages.length > 1
+
+  return { messages, isThinking, error, send, stop, reload, clear, hasConversation }
 }

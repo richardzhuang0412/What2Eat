@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRecipes } from '../hooks/useRecipes'
 import { useYamlData } from '../hooks/useYamlData'
 
@@ -119,36 +119,7 @@ function Recipes({ onAskChef }) {
 
       {/* Recent meals */}
       {meals.length > 0 && (
-        <div>
-          <h2 className="text-sm font-medium text-[var(--color-text-light)] uppercase tracking-wide mb-3">
-            Recent Meals
-          </h2>
-          <div className="space-y-2">
-            {meals.slice(-10).reverse().map((meal, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl px-4 py-3 border border-[var(--color-peach)]/20 shadow-sm
-                           flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => onAskChef?.(`I want to make ${meal.dish} again. What's the recipe?`)}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-sm">
-                    {meal.meal === 'breakfast' ? '🌅' : meal.meal === 'lunch' ? '☀️' : meal.meal === 'dinner' ? '🌙' : '🍿'}
-                  </span>
-                  <div>
-                    <span className="text-sm font-medium">{meal.dish}</span>
-                    {meal.notes && (
-                      <p className="text-xs text-[var(--color-text-light)]">{meal.notes}</p>
-                    )}
-                  </div>
-                </div>
-                <span className="text-xs text-[var(--color-text-light)] whitespace-nowrap ml-3">
-                  {meal.date}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <RecentMeals meals={meals} recipes={recipes} onAskChef={onAskChef} />
       )}
     </div>
   )
@@ -205,6 +176,102 @@ function RecipeDetail({ recipe, onClose, onCook }) {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function RecentMeals({ meals, recipes, onAskChef }) {
+  const [expandedIndex, setExpandedIndex] = useState(null)
+
+  // Match meals to saved recipes by slug
+  const recipeMap = useMemo(() => {
+    const map = {}
+    recipes.forEach(r => { map[r.slug] = r })
+    return map
+  }, [recipes])
+
+  const recentMeals = meals.slice(-10).reverse()
+
+  return (
+    <div>
+      <h2 className="text-sm font-medium text-[var(--color-text-light)] uppercase tracking-wide mb-3">
+        Recent Meals
+      </h2>
+      <div className="space-y-2">
+        {recentMeals.map((meal, i) => {
+          const isExpanded = expandedIndex === i
+          const mealIcon = meal.meal === 'breakfast' ? '🌅' : meal.meal === 'lunch' ? '☀️' : meal.meal === 'dinner' ? '🌙' : '🍿'
+          // Try to find linked recipe
+          const recipeSlug = meal.recipe?.replace('collection/', '').replace('.md', '')
+          const linkedRecipe = recipeSlug ? recipeMap[recipeSlug] : null
+
+          return (
+            <div key={i}>
+              <div
+                onClick={() => setExpandedIndex(isExpanded ? null : i)}
+                className={`bg-white rounded-xl px-4 py-3 border shadow-sm
+                           flex items-center justify-between hover:shadow-md transition-all cursor-pointer
+                           ${isExpanded ? 'border-[var(--color-sage)]/40' : 'border-[var(--color-peach)]/20'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-sm">{mealIcon}</span>
+                  <div>
+                    <span className="text-sm font-medium">{meal.dish}</span>
+                    {meal.notes && (
+                      <p className="text-xs text-[var(--color-text-light)]">{meal.notes}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[var(--color-text-light)] whitespace-nowrap">
+                    {meal.date}
+                  </span>
+                  <span className={`text-xs text-[var(--color-text-light)] transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                    ▾
+                  </span>
+                </div>
+              </div>
+
+              {/* Expanded detail */}
+              {isExpanded && (
+                <div className="mt-1 ml-8 p-3 bg-white/70 rounded-lg border border-[var(--color-peach)]/20 text-sm space-y-2">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="text-[var(--color-text-light)]">Meal:</span> {meal.meal}</div>
+                    <div><span className="text-[var(--color-text-light)]">Date:</span> {meal.date}</div>
+                    {linkedRecipe?.cuisine && (
+                      <div><span className="text-[var(--color-text-light)]">Cuisine:</span> {linkedRecipe.cuisine}</div>
+                    )}
+                    {linkedRecipe?.cook_time && (
+                      <div><span className="text-[var(--color-text-light)]">Cook time:</span> {linkedRecipe.cook_time}</div>
+                    )}
+                  </div>
+                  {meal.notes && (
+                    <p className="text-xs text-[var(--color-text-light)] italic">{meal.notes}</p>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    {linkedRecipe && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onAskChef?.(`Show me the recipe for ${meal.dish}`) }}
+                        className="text-xs px-3 py-1 rounded-full bg-[var(--color-peach)]/30
+                                   text-[var(--color-text)] hover:bg-[var(--color-peach)]/60 transition-colors cursor-pointer"
+                      >
+                        View recipe
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onAskChef?.(`I want to make ${meal.dish} again`) }}
+                      className="text-xs px-3 py-1 rounded-full bg-[var(--color-sage)]/20
+                                 text-[var(--color-sage-dark)] hover:bg-[var(--color-sage)]/40 transition-colors cursor-pointer"
+                    >
+                      Cook again
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
