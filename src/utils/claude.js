@@ -1,4 +1,4 @@
-import { Command } from '@tauri-apps/plugin-shell'
+import { invoke } from '@tauri-apps/api/core'
 import { readTextFile, exists } from '@tauri-apps/plugin-fs'
 import { dataPath } from './paths'
 
@@ -8,16 +8,16 @@ import { dataPath } from './paths'
 async function buildSystemPrompt() {
   const parts = []
 
-  // Read main CLAUDE.md
+  // Read main CLAUDE.md (from data/ — the chef instructions)
   try {
     const claudeMd = await readTextFile(dataPath('CLAUDE.md'))
     parts.push(claudeMd)
   } catch (e) {
-    console.warn('[Claude] Could not read CLAUDE.md:', e)
+    console.warn('[Claude] Could not read data/CLAUDE.md:', e)
     parts.push('You are a personal eating manager and chef assistant.')
   }
 
-  // Read all SKILL.md files for full context
+  // Read all SKILL.md files
   const skillFiles = [
     'inventory/SKILL.md',
     'recipes/SKILL.md',
@@ -43,7 +43,8 @@ async function buildSystemPrompt() {
 ## Response Guidelines
 
 You are responding through a desktop app chat interface, not a CLI.
-All data files are relative to the current working directory under data/.
+All data files are in the current working directory (which is the data/ folder).
+When reading or writing files, use paths relative to the current directory — e.g. inventory/current.yaml, not data/inventory/current.yaml.
 
 - Keep responses conversational and concise (2-4 sentences for simple questions)
 - Use plain text only — no markdown headers, bold, or code blocks
@@ -58,7 +59,8 @@ All data files are relative to the current working directory under data/.
 }
 
 /**
- * Send a message to Claude CLI and get a response.
+ * Send a message to Claude CLI via Tauri Rust command.
+ * Claude runs with CWD set to data/ — isolated from dev context.
  */
 export async function sendMessage(userMessage) {
   let systemPrompt
@@ -75,7 +77,6 @@ export async function sendMessage(userMessage) {
     '--output-format', 'text',
     '--system-prompt', systemPrompt,
     '--allowedTools', 'Read,Write,Edit',
-    '--add-dir', 'data',
     '--model', 'sonnet',
     '--dangerously-skip-permissions',
     '--no-session-persistence',
@@ -84,39 +85,19 @@ export async function sendMessage(userMessage) {
   ]
 
   console.log('[Claude] Sending message:', userMessage.substring(0, 100))
-  console.log('[Claude] Args count:', args.length)
-
-  let command
-  try {
-    command = Command.create('claude', args)
-  } catch (e) {
-    console.error('[Claude] Failed to create command:', e)
-    throw e
-  }
 
   try {
-    console.log('[Claude] Executing...')
-    const output = await command.execute()
+    const result = await invoke('invoke_claude', { args })
+    console.log('[Claude] Response length:', result?.length)
+    console.log('[Claude] Response preview:', result?.substring(0, 200))
 
-    console.log('[Claude] Exit code:', output.code)
-    console.log('[Claude] Stdout:', output.stdout?.substring(0, 200))
-    console.log('[Claude] Stderr:', output.stderr?.substring(0, 500))
-
-    if (output.code !== 0) {
-      console.error('[Claude] Non-zero exit:', output.code)
-      return `Sorry, something went wrong. ${output.stderr?.substring(0, 200) || ''}`
+    if (result && result.trim()) {
+      return result.trim()
     }
-
-    if (output.stdout && output.stdout.trim()) {
-      return output.stdout.trim()
-    }
-
     return "Hmm, I didn't get a response. Could you try again?"
   } catch (err) {
-    console.error('[Claude] Execute error:', err)
-    console.error('[Claude] Error type:', typeof err)
-    console.error('[Claude] Error message:', err?.message)
-    throw new Error(`Claude CLI error: ${err?.message || JSON.stringify(err)}`)
+    console.error('[Claude] Invoke error:', err)
+    throw new Error(typeof err === 'string' ? err : err?.message || JSON.stringify(err))
   }
 }
 
@@ -125,12 +106,11 @@ export async function sendMessage(userMessage) {
  */
 export async function isClaudeAvailable() {
   try {
-    const command = Command.create('claude-version')
-    const output = await command.execute()
-    console.log('[Claude] Version check - code:', output.code, 'stdout:', output.stdout?.trim())
-    return output.code === 0
+    const version = await invoke('check_claude')
+    console.log('[Claude] Version:', version)
+    return true
   } catch (err) {
-    console.error('[Claude] Version check failed:', err)
+    console.error('[Claude] Not available:', err)
     return false
   }
 }
