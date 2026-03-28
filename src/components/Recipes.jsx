@@ -111,6 +111,9 @@ function Recipes({ onAskChef }) {
                     ))}
                   </div>
                 )}
+                {recipe.source && recipe.source !== 'original' && (
+                  <SourceBadge source={recipe.source} />
+                )}
               </div>
             ))}
           </div>
@@ -158,8 +161,15 @@ function RecipeDetail({ recipe, onClose, onCook }) {
             </div>
           )}
 
+          {/* Source */}
+          {recipe.source && recipe.source !== 'original' && (
+            <div className="mt-4 pt-3 border-t border-[var(--color-peach)]/20">
+              <SourceBadge source={recipe.source} expanded />
+            </div>
+          )}
+
           {/* Actions */}
-          <div className="flex gap-3 mt-6 pt-4 border-t border-[var(--color-peach)]/30">
+          <div className="flex gap-3 mt-4 pt-4 border-t border-[var(--color-peach)]/30">
             <button
               onClick={onCook}
               className="flex-1 py-2.5 rounded-xl bg-[var(--color-sage)] text-white text-sm font-medium
@@ -177,6 +187,47 @@ function RecipeDetail({ recipe, onClose, onCook }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function SourceBadge({ source, expanded = false }) {
+  if (!source || source === 'original') return null
+
+  const isUrl = source.startsWith('http')
+  let displayName = source
+
+  if (isUrl) {
+    try {
+      const url = new URL(source)
+      displayName = url.hostname.replace('www.', '')
+    } catch {
+      displayName = source
+    }
+  }
+
+  if (expanded && isUrl) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-light)]">
+        <span>📎</span>
+        <span>Source:</span>
+        <a
+          href={source}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[var(--color-sage-dark)] hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {displayName}
+        </a>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-2 flex items-center gap-1 text-xs text-[var(--color-text-light)]">
+      <span>📎</span>
+      <span className="truncate max-w-[200px]">{displayName}</span>
     </div>
   )
 }

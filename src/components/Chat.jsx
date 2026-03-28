@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { useClaudeChat } from '../hooks/useClaudeChat'
+import { getLoadingMessage } from '../utils/loadingMessages'
 
 function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
   const { messages, isThinking, error, send, stop, reload, clear, hasConversation } = useClaudeChat()
   const [input, setInput] = useState('')
+  const [loadingMsg, setLoadingMsg] = useState('')
   const messagesEndRef = useRef(null)
   const sentPromptsRef = useRef(new Set())
 
@@ -27,9 +29,19 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
 
   const handleSend = () => {
     if (!input.trim() || isThinking) return
+    setLoadingMsg(getLoadingMessage(input))
     send(input.trim())
     setInput('')
   }
+
+  // Also set loading message for cross-panel prompts
+  useEffect(() => {
+    if (isThinking && !loadingMsg) {
+      const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')
+      setLoadingMsg(getLoadingMessage(lastUserMsg?.text || ''))
+    }
+    if (!isThinking) setLoadingMsg('')
+  }, [isThinking])
 
   return (
     <div className="flex flex-col h-full">
@@ -39,7 +51,7 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
           <span className="text-lg">👨‍🍳</span>
           <span className="font-medium text-sm text-[var(--color-text)]">Chef</span>
           {isThinking && (
-            <span className="text-xs text-[var(--color-text-light)] animate-pulse">cooking up a reply...</span>
+            <span className="text-xs text-[var(--color-text-light)] animate-pulse">{loadingMsg || 'Thinking...'}</span>
           )}
         </div>
         <div className="flex items-center gap-3">
@@ -92,10 +104,13 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
           <div className="flex justify-start">
             <span className="text-lg mr-2 mt-1">👨‍🍳</span>
             <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-md shadow-sm border border-[var(--color-peach)]/30">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-[var(--color-peach)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-[var(--color-peach)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-[var(--color-peach)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 bg-[var(--color-peach)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 bg-[var(--color-peach)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 bg-[var(--color-peach)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span className="text-xs text-[var(--color-text-light)]">{loadingMsg || 'Thinking...'}</span>
               </div>
             </div>
           </div>
