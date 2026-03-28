@@ -1,0 +1,41 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default permissions for What2Eat",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-spawn",
+    "shell:allow-stdin-write",
+    "shell:allow-kill",
+    "fs:default",
+    {
+      "identifier": "fs:allow-read",
+      "allow": [
+        { "path": "$RESOURCE/**" },
+        { "path": "**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write",
+      "allow": [
+        { "path": "$RESOURCE/**" },
+        { "path": "**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        { "path": "$RESOURCE/**" },
+        { "path": "**" }
+      ]
+    },
+    "fs:allow-mkdir",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        { "name": "claude", "cmd": "claude", "args": true }
+      ]
+    }
+  ]
+}
