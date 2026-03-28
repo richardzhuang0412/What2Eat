@@ -5,15 +5,17 @@ function Chat({ initialPrompt, onPromptConsumed }) {
   const { messages, isThinking, error, send, clear } = useClaudeChat()
   const [input, setInput] = useState('')
   const messagesEndRef = useRef(null)
+  const sentPromptsRef = useRef(new Set())
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isThinking])
 
-  // Handle prompts from other panels
+  // Handle prompts from other panels (ref guard prevents double-fire)
   useEffect(() => {
-    if (initialPrompt && !isThinking) {
+    if (initialPrompt && !isThinking && !sentPromptsRef.current.has(initialPrompt)) {
+      sentPromptsRef.current.add(initialPrompt)
       send(initialPrompt)
       onPromptConsumed?.()
     }
