@@ -6,6 +6,7 @@ import Inventory from './components/Inventory'
 import Recipes from './components/Recipes'
 import Reminders from './components/Reminders'
 import Settings from './components/Settings'
+import Preferences from './components/Preferences'
 import Setup from './components/Setup'
 
 class ErrorBoundary extends Component {
@@ -145,6 +146,7 @@ function App() {
           {activeView === 'inventory' && <Inventory onAskChef={goToChat} />}
           {activeView === 'recipes' && <Recipes onAskChef={goToChat} />}
           {activeView === 'reminders' && <Reminders onAskChef={goToChat} />}
+          {activeView === 'preferences' && <Preferences />}
           {activeView === 'settings' && <Settings />}
         </ErrorBoundary>
       </main>

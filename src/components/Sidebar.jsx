@@ -3,6 +3,7 @@ const navItems = [
   { id: 'inventory', label: 'Kitchen', icon: '🧊' },
   { id: 'recipes', label: 'Recipes', icon: '📖' },
   { id: 'reminders', label: 'Reminders', icon: '⏰' },
+  { id: 'preferences', label: 'Profile', icon: '👤' },
 ]
 
 function Sidebar({ activeView, onNavigate }) {
