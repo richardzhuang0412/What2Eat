@@ -1,26 +1,25 @@
 # What2Eat — Development Progress
 
-## Completed
-- [x] Phase 1: Scaffold Tauri + React app (sidebar, routing, warm palette)
-- [x] Phase 2: Data layer (YAML utils, polling hooks, real data in all panels)
-- [x] Phase 3: Claude CLI integration (chat, system prompt, scoped shell commands)
-
-## In Progress
-- [ ] Phase 4: Dashboard polish (interactive features, better layouts, brainstorm)
+## v0.1.0 (Current)
+- [x] Phase 1: Scaffold Tauri + React app
+- [x] Phase 2: Data layer (Rust file I/O, YAML hooks, polling)
+- [x] Phase 3: Claude CLI integration (subprocess, system prompt, chat)
+- [x] Phase 4: Dashboard polish (search/filter, interactive features, cross-panel actions)
+- [x] Bug fixes (double messages, auth, fs scope, YAML dates, Vite watcher, context isolation)
+- [x] Setup wizard (welcome, dietary, cooking, pantry/seasonings, cuisines)
+- [x] Preferences/Profile tab (editable, synced to YAML)
+- [x] Settings (export/import tar.gz with schema validation, reset)
+- [x] Chat controls (stop, retry, new chat, conversation confirmation)
+- [x] Recipe source citations
+- [x] Context-aware loading messages
+- [x] Custom assistant naming
+- [x] Error boundary
 
 ## Upcoming
-- [ ] Phase 5: Animated chef sprite (Canvas rendering, state transitions)
-- [ ] Phase 6: First-run setup wizard (visual onboarding replacing CLI /setup)
-- [ ] Phase 7: Final polish (app icon, menu bar, keyboard shortcuts, error handling)
-
-## Key Files
-- `src/utils/claude.js` — Claude CLI invocation + system prompt building
-- `src/hooks/useClaudeChat.js` — Chat conversation state management
-- `src/hooks/useYamlData.js` — Reactive YAML file reading with polling
-- `src/hooks/useRecipes.js` — Recipe collection reading
-- `src/components/Chat.jsx` — Chat interface
-- `src/components/Inventory.jsx` — Kitchen inventory grouped by location
-- `src/components/Recipes.jsx` — Recipe cards + meal history
-- `src/components/Reminders.jsx` — Reminder list with urgency colors
-- `src-tauri/capabilities/default.json` — Tauri permissions (fs, shell)
-- `data/` — All YAML data files + SKILL.md context files
+- [ ] Phase 5: Animated chef/assistant sprite
+- [ ] Phase 6: Visual polish (app icon, animations, transitions)
+- [ ] Streaming Claude responses (switch to stream-json)
+- [ ] Meal planning (weekly plan view)
+- [ ] Grocery list generation from planned meals
+- [ ] Nutrition tracking panel
+- [ ] Push notifications for reminders
