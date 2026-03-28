@@ -10,6 +10,7 @@ function Setup({ onComplete }) {
 
   // Collected data
   const [name, setName] = useState('')
+  const [chefName, setChefName] = useState('')
   const [restrictions, setRestrictions] = useState([])
   const [allergies, setAllergies] = useState([])
   const [dislikes, setDislikes] = useState('')
@@ -63,10 +64,10 @@ function Setup({ onComplete }) {
       await invoke('write_data_file', { relativePath: 'preferences/profile.yaml', content: profileYaml })
 
       // Write CLAUDE.local.md
-      if (name.trim()) {
-        const localMd = `# What2Eat — Personal Overrides\n\nUser: ${name.trim()}\n\n## Custom Instructions\n(Add any personal instructions or overrides here.)\n`
-        await invoke('write_data_file', { relativePath: 'CLAUDE.local.md', content: localMd })
-      }
+      const userName = name.trim() || 'Friend'
+      const assistantName = chefName.trim() || 'Chef'
+      const localMd = `# What2Eat — Personal Overrides\n\nUser: ${userName}\nAssistant name: ${assistantName}\n\nWhen responding, refer to yourself as "${assistantName}". Be warm and casual — you're ${userName}'s personal food assistant and housekeeper.\n\n## Custom Instructions\n(Add any personal instructions or overrides here.)\n`
+      await invoke('write_data_file', { relativePath: 'CLAUDE.local.md', content: localMd })
 
       onComplete()
     } catch (err) {
@@ -96,7 +97,7 @@ function Setup({ onComplete }) {
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-lg p-8 border border-[var(--color-peach)]/20">
           {currentStep === 'welcome' && (
-            <WelcomeStep name={name} setName={setName} />
+            <WelcomeStep name={name} setName={setName} chefName={chefName} setChefName={setChefName} />
           )}
           {currentStep === 'dietary' && (
             <DietaryStep
@@ -122,7 +123,7 @@ function Setup({ onComplete }) {
             />
           )}
           {currentStep === 'done' && (
-            <DoneStep name={name} />
+            <DoneStep name={name} chefName={chefName} />
           )}
 
           {/* Navigation */}
@@ -166,23 +167,52 @@ function Setup({ onComplete }) {
   )
 }
 
-function WelcomeStep({ name, setName }) {
+function WelcomeStep({ name, setName, chefName, setChefName }) {
+  const suggestions = ['Mochi', 'Basil', 'Pepper', 'Olive', 'Sage']
   return (
     <div className="text-center">
-      <span className="text-5xl">👨‍🍳</span>
+      <span className="text-5xl">🍳</span>
       <h1 className="text-2xl font-semibold text-[var(--color-text)] mt-4">Welcome to What2Eat!</h1>
       <p className="text-sm text-[var(--color-text-light)] mt-2 mb-6">
-        I'm your personal chef assistant. Let me learn a bit about you so I can help you figure out what to eat.
+        Your personal food assistant and kitchen housekeeper. Let me learn a bit about you!
       </p>
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="What's your name?"
-        className="w-full max-w-xs mx-auto px-4 py-3 rounded-xl bg-[var(--color-cream)] border border-[var(--color-peach)]/50
-                   text-sm text-center text-[var(--color-text)] placeholder:text-[var(--color-text-light)]/50
-                   focus:outline-none focus:border-[var(--color-sage)] transition-colors"
-      />
+      <div className="space-y-4 max-w-xs mx-auto">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="What's your name?"
+          className="w-full px-4 py-3 rounded-xl bg-[var(--color-cream)] border border-[var(--color-peach)]/50
+                     text-sm text-center text-[var(--color-text)] placeholder:text-[var(--color-text-light)]/50
+                     focus:outline-none focus:border-[var(--color-sage)] transition-colors"
+        />
+        <div>
+          <input
+            type="text"
+            value={chefName}
+            onChange={(e) => setChefName(e.target.value)}
+            placeholder="Name your assistant"
+            className="w-full px-4 py-3 rounded-xl bg-[var(--color-cream)] border border-[var(--color-peach)]/50
+                       text-sm text-center text-[var(--color-text)] placeholder:text-[var(--color-text-light)]/50
+                       focus:outline-none focus:border-[var(--color-sage)] transition-colors"
+          />
+          <div className="flex justify-center gap-2 mt-2">
+            {suggestions.map(s => (
+              <button
+                key={s}
+                onClick={() => setChefName(s)}
+                className={`text-xs px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                  chefName === s
+                    ? 'bg-[var(--color-sage)] text-white'
+                    : 'bg-[var(--color-cream)] text-[var(--color-text-light)] hover:bg-[var(--color-peach)]/40'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -359,7 +389,8 @@ function CuisinesStep({ favCuisines, toggleCuisine, wantToTry, setWantToTry, not
   )
 }
 
-function DoneStep({ name }) {
+function DoneStep({ name, chefName }) {
+  const displayChef = chefName || 'your assistant'
   return (
     <div className="text-center">
       <span className="text-5xl">🎉</span>
@@ -367,13 +398,13 @@ function DoneStep({ name }) {
         All set{name ? `, ${name}` : ''}!
       </h2>
       <p className="text-sm text-[var(--color-text-light)] mt-2 mb-4">
-        Here's what you can do:
+        {chefName ? `${chefName} is ready to help. Here's` : "Here's"} what you can do:
       </p>
       <div className="text-left bg-[var(--color-cream)] rounded-xl p-4 space-y-2">
         {[
-          { icon: '🛒', text: '"I just went grocery shopping" — I\'ll track your inventory' },
-          { icon: '🍽', text: '"What should I eat tonight?" — I\'ll suggest meals' },
-          { icon: '⏰', text: '"Remind me to defrost chicken" — I\'ll remember for you' },
+          { icon: '🛒', text: `"I just went grocery shopping" — ${displayChef} will track your inventory` },
+          { icon: '🍽', text: `"What should I eat tonight?" — ${displayChef} will suggest meals` },
+          { icon: '⏰', text: `"Remind me to defrost chicken" — ${displayChef} will remember for you` },
           { icon: '📖', text: 'Check Kitchen, Recipes, and Reminders tabs for your data' },
         ].map((item, i) => (
           <div key={i} className="flex items-start gap-2 text-sm text-[var(--color-text)]">

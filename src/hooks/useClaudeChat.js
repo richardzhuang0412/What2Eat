@@ -5,7 +5,7 @@ export function useClaudeChat() {
   const [messages, setMessages] = useState([
     {
       role: 'chef',
-      text: "Hi! I'm your personal chef. Ask me what to cook, tell me what you bought, or just chat about food! 🍳",
+      text: "Hi! Ask me what to cook, tell me what you bought, or just chat about food! 🍳",
     },
   ])
   const [isThinking, setIsThinking] = useState(false)

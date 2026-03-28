@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { useClaudeChat } from '../hooks/useClaudeChat'
 import { getLoadingMessage } from '../utils/loadingMessages'
 
@@ -6,8 +7,21 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
   const { messages, isThinking, error, send, stop, reload, clear, hasConversation } = useClaudeChat()
   const [input, setInput] = useState('')
   const [loadingMsg, setLoadingMsg] = useState('')
+  const [assistantName, setAssistantName] = useState('Chef')
   const messagesEndRef = useRef(null)
   const sentPromptsRef = useRef(new Set())
+
+  // Load assistant name from CLAUDE.local.md
+  useEffect(() => {
+    async function loadName() {
+      try {
+        const content = await invoke('read_data_file', { relativePath: 'CLAUDE.local.md' })
+        const match = content.match(/Assistant name:\s*(.+)/)
+        if (match) setAssistantName(match[1].trim())
+      } catch { /* use default */ }
+    }
+    loadName()
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -49,7 +63,7 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
       <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-peach)]/30">
         <div className="flex items-center gap-2">
           <span className="text-lg">👨‍🍳</span>
-          <span className="font-medium text-sm text-[var(--color-text)]">Chef</span>
+          <span className="font-medium text-sm text-[var(--color-text)]">{assistantName}</span>
           {isThinking && (
             <span className="text-xs text-[var(--color-text-light)] animate-pulse">{loadingMsg || 'Thinking...'}</span>
           )}
