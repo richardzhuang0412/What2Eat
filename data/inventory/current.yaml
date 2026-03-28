@@ -1,12 +1,12 @@
 last_updated: "2026-03-28"
 items:
   - name: chicken breast
-    quantity: 2
+    quantity: 4
     unit: lbs
     tags: [protein, fridge]
     purchased: "2026-03-27"
     expires: "2026-03-30"
-    notes: ""
+    notes: "includes 2 lbs chicken tender breast added 2026-03-28"
   - name: jasmine rice
     quantity: 5
     unit: lbs
@@ -55,4 +55,11 @@ items:
     tags: [protein, freezer, frozen]
     purchased: "2026-03-20"
     expires: "2026-07-20"
+    notes: ""
+  - name: cucumber
+    quantity: 1
+    unit: piece
+    tags: [vegetable, fridge]
+    purchased: "2026-03-28"
+    expires: "2026-04-04"
     notes: ""

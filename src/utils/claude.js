@@ -1,11 +1,12 @@
 import { Command } from '@tauri-apps/plugin-shell'
-import { readTextFile, exists } from '@tauri-apps/plugin-fs'
+import { readTextFile, writeTextFile, exists } from '@tauri-apps/plugin-fs'
 import { dataPath } from './paths'
 
 /**
  * Build the system prompt by reading CLAUDE.md and relevant SKILL.md files.
+ * Writes to a temp file and returns the path, to avoid shell arg length issues.
  */
-async function buildSystemPrompt() {
+async function buildAndWriteSystemPrompt() {
   const parts = []
 
   // Read main CLAUDE.md
@@ -53,23 +54,24 @@ All data files are relative to the current working directory under data/.
 - Today's date is ${new Date().toISOString().split('T')[0]}
 `)
 
-  return parts.join('\n')
+  const prompt = parts.join('\n')
+
+  // Write to a temp file to avoid shell arg length issues
+  const promptPath = dataPath('.system-prompt.tmp')
+  await writeTextFile(promptPath, prompt)
+  return promptPath
 }
 
 /**
  * Send a message to Claude CLI and get a response.
- * Uses --print mode with text output for simplicity.
- *
- * @param {string} userMessage - The user's message
- * @returns {Promise<string>} - Claude's response text
  */
 export async function sendMessage(userMessage) {
-  const systemPrompt = await buildSystemPrompt()
+  const promptFilePath = await buildAndWriteSystemPrompt()
 
   const args = [
     '--print',
     '--output-format', 'text',
-    '--system-prompt', systemPrompt,
+    '--system-prompt-file', promptFilePath,
     '--allowedTools', 'Read,Write,Edit',
     '--add-dir', 'data',
     '--model', 'sonnet',
@@ -78,23 +80,31 @@ export async function sendMessage(userMessage) {
     '-p', userMessage,
   ]
 
+  console.log('[Claude] Sending message:', userMessage.substring(0, 100))
+
   const command = Command.create('claude', args)
 
   try {
     const output = await command.execute()
 
+    console.log('[Claude] Exit code:', output.code)
+    console.log('[Claude] Stdout length:', output.stdout?.length || 0)
+    if (output.stderr) {
+      console.log('[Claude] Stderr:', output.stderr.substring(0, 500))
+    }
+
+    if (output.code !== 0) {
+      console.error('[Claude] Non-zero exit:', output.code, output.stderr)
+      return `Sorry, something went wrong (exit ${output.code}). ${output.stderr || ''}`
+    }
+
     if (output.stdout && output.stdout.trim()) {
       return output.stdout.trim()
     }
 
-    if (output.stderr && output.stderr.includes('Error')) {
-      console.error('Claude error:', output.stderr)
-      return "Sorry, I had trouble processing that. Could you try again?"
-    }
-
-    return "Hmm, I didn't get a response. Let me try again."
+    return "Hmm, I didn't get a response. Could you try again?"
   } catch (err) {
-    console.error('Claude CLI failed:', err)
+    console.error('[Claude] Execute failed:', err)
     throw new Error(`Failed to reach Claude: ${err.message || err}`)
   }
 }
@@ -106,8 +116,10 @@ export async function isClaudeAvailable() {
   try {
     const command = Command.create('claude-version')
     const output = await command.execute()
+    console.log('[Claude] Version check:', output.code, output.stdout?.trim())
     return output.code === 0
-  } catch {
+  } catch (err) {
+    console.error('[Claude] Version check failed:', err)
     return false
   }
 }
