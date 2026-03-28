@@ -8,7 +8,8 @@ import { invoke } from '@tauri-apps/api/core'
 export async function readYaml(relativePath) {
   try {
     const content = await invoke('read_data_file', { relativePath })
-    return yaml.load(content)
+    // Load with string timestamps — prevents js-yaml from converting dates to Date objects
+    return yaml.load(content, { schema: yaml.JSON_SCHEMA })
   } catch (err) {
     // "File not found" is expected for empty/new installs
     if (typeof err === 'string' && err.includes('not found')) return null
@@ -58,7 +59,7 @@ export function parseFrontmatter(markdown) {
   if (!match) return { frontmatter: {}, content: markdown }
 
   try {
-    const frontmatter = yaml.load(match[1])
+    const frontmatter = yaml.load(match[1], { schema: yaml.JSON_SCHEMA })
     return { frontmatter, content: match[2].trim() }
   } catch {
     return { frontmatter: {}, content: markdown }
