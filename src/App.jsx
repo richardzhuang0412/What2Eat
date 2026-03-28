@@ -146,8 +146,8 @@ function App() {
           {activeView === 'inventory' && <Inventory onAskChef={goToChat} />}
           {activeView === 'recipes' && <Recipes onAskChef={goToChat} />}
           {activeView === 'reminders' && <Reminders onAskChef={goToChat} />}
-          {activeView === 'preferences' && <Preferences />}
-          {activeView === 'settings' && <Settings />}
+          {activeView === 'preferences' && <Preferences onRedoSetup={() => setNeedsSetup(true)} />}
+          {activeView === 'settings' && <Settings onResetComplete={() => setNeedsSetup(true)} />}
         </ErrorBoundary>
       </main>
 

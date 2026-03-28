@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import yaml from 'js-yaml'
 
-const STEPS = ['welcome', 'dietary', 'cooking', 'cuisines', 'done']
+const STEPS = ['welcome', 'dietary', 'cooking', 'pantry', 'cuisines', 'done']
 
 function Setup({ onComplete }) {
   const [step, setStep] = useState(0)
@@ -19,6 +19,9 @@ function Setup({ onComplete }) {
   const [equipment, setEquipment] = useState([])
   const [prepTime, setPrepTime] = useState(null)
   const [servings, setServings] = useState(1)
+  const [seasonings, setSeasonings] = useState([])
+  const [pantryStaples, setPantryStaples] = useState([])
+  const [oils, setOils] = useState([])
   const [favCuisines, setFavCuisines] = useState([])
   const [wantToTry, setWantToTry] = useState('')
   const [notes, setNotes] = useState('')
@@ -62,6 +65,26 @@ function Setup({ onComplete }) {
       // Write preferences
       const profileYaml = yaml.dump(profile, { lineWidth: -1, noRefs: true })
       await invoke('write_data_file', { relativePath: 'preferences/profile.yaml', content: profileYaml })
+
+      // Write pantry/seasonings to inventory
+      const allPantryItems = [
+        ...seasonings.map(s => ({ name: s, quantity: 1, unit: 'bottle', tags: ['spice', 'pantry'], purchased: new Date().toISOString().split('T')[0], expires: null, notes: 'added during setup' })),
+        ...pantryStaples.map(s => ({ name: s, quantity: 1, unit: 'bag', tags: ['pantry', 'staple'], purchased: new Date().toISOString().split('T')[0], expires: null, notes: 'added during setup' })),
+        ...oils.map(o => ({ name: o, quantity: 1, unit: 'bottle', tags: ['oil', 'pantry'], purchased: new Date().toISOString().split('T')[0], expires: null, notes: 'added during setup' })),
+      ]
+      if (allPantryItems.length > 0) {
+        // Read existing inventory and merge
+        let inventory = { last_updated: new Date().toISOString().split('T')[0], items: [] }
+        try {
+          const existing = await invoke('read_data_file', { relativePath: 'inventory/current.yaml' })
+          const parsed = yaml.load(existing, { schema: yaml.JSON_SCHEMA })
+          if (parsed?.items) inventory.items = parsed.items
+        } catch { /* fresh inventory */ }
+        inventory.items.push(...allPantryItems)
+        inventory.last_updated = new Date().toISOString().split('T')[0]
+        const invYaml = yaml.dump(inventory, { lineWidth: -1, noRefs: true })
+        await invoke('write_data_file', { relativePath: 'inventory/current.yaml', content: invYaml })
+      }
 
       // Write CLAUDE.local.md
       const userName = name.trim() || 'Friend'
@@ -113,6 +136,13 @@ function Setup({ onComplete }) {
               equipment={equipment} toggleEquipment={(e) => toggleItem(equipment, setEquipment, e)}
               prepTime={prepTime} setPrepTime={setPrepTime}
               servings={servings} setServings={setServings}
+            />
+          )}
+          {currentStep === 'pantry' && (
+            <PantryStep
+              seasonings={seasonings} toggleSeasoning={(s) => toggleItem(seasonings, setSeasonings, s)}
+              pantryStaples={pantryStaples} toggleStaple={(s) => toggleItem(pantryStaples, setPantryStaples, s)}
+              oils={oils} toggleOil={(o) => toggleItem(oils, setOils, o)}
             />
           )}
           {currentStep === 'cuisines' && (
@@ -382,6 +412,49 @@ function CuisinesStep({ favCuisines, toggleCuisine, wantToTry, setWantToTry, not
             className="w-full mt-2 px-3 py-2 rounded-lg bg-[var(--color-cream)] border border-[var(--color-peach)]/40
                        text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-light)]/40
                        focus:outline-none focus:border-[var(--color-sage)] transition-colors"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PantryStep({ seasonings, toggleSeasoning, pantryStaples, toggleStaple, oils, toggleOil }) {
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-[var(--color-text)]">Kitchen essentials</h2>
+      <p className="text-sm text-[var(--color-text-light)] mt-1 mb-5">
+        What seasonings, staples, and oils do you keep around? This helps me know what you can cook without a trip to the store.
+      </p>
+
+      <div className="space-y-5">
+        <div>
+          <label className="text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wide">Seasonings & spices</label>
+          <ChipGroup
+            presets={['Salt', 'Black pepper', 'Garlic powder', 'Onion powder', 'Cumin', 'Paprika', 'Chili flakes', 'Oregano', 'Cinnamon', 'Ginger', 'Turmeric', 'Five spice', 'Curry powder', 'Italian seasoning', 'Bay leaves']}
+            selected={seasonings}
+            onToggle={toggleSeasoning}
+            placeholder="Other spice..."
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wide">Pantry staples</label>
+          <ChipGroup
+            presets={['Soy sauce', 'Fish sauce', 'Oyster sauce', 'Vinegar', 'Sugar', 'Flour', 'Cornstarch', 'Rice', 'Pasta', 'Canned tomatoes', 'Chicken broth', 'Honey', 'Sesame oil', 'Hot sauce', 'Ketchup', 'Mustard']}
+            selected={pantryStaples}
+            onToggle={toggleStaple}
+            placeholder="Other staple..."
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wide">Cooking oils & fats</label>
+          <ChipGroup
+            presets={['Olive oil', 'Vegetable oil', 'Coconut oil', 'Butter', 'Sesame oil', 'Avocado oil']}
+            selected={oils}
+            onToggle={toggleOil}
+            placeholder="Other oil..."
           />
         </div>
       </div>

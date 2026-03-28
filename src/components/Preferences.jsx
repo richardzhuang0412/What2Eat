@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core'
 import yaml from 'js-yaml'
 import { readYaml, writeYaml } from '../utils/yaml'
 
-function Preferences() {
+function Preferences({ onRedoSetup }) {
   const [profile, setProfile] = useState(null)
   const [localMd, setLocalMd] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -259,6 +259,19 @@ function Preferences() {
         <Section title="Notes">
           <NotesEditor items={notes} onUpdate={(newNotes) => updateField('notes', newNotes)} />
         </Section>
+
+        {/* Redo setup */}
+        <div className="pt-2">
+          <button
+            onClick={onRedoSetup}
+            className="text-sm text-[var(--color-text-light)] hover:text-[var(--color-sage-dark)] transition-colors cursor-pointer"
+          >
+            ↻ Redo initial setup
+          </button>
+          <p className="text-xs text-[var(--color-text-light)]/60 mt-1">
+            Go through the setup wizard again. Your current data stays — setup will overwrite preferences.
+          </p>
+        </div>
       </div>
     </div>
   )

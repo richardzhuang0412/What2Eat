@@ -3,13 +3,16 @@ dietary:
   allergies: []
   dislikes: []
   favorites: []
+
 cooking:
   skill_level: intermediate
   equipment: []
   max_prep_time: null
   default_servings: 1
+
 cuisines:
   favorites: []
   want_to_try: []
   avoid: []
+
 notes: []

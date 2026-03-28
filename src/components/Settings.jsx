@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { save, open } from '@tauri-apps/plugin-dialog'
 
-function Settings() {
+function Settings({ onResetComplete }) {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
@@ -77,8 +77,9 @@ function Settings() {
     setStatus(null)
     try {
       const result = await invoke('reset_data')
-      setStatus({ type: 'success', text: result })
       setConfirmReset(false)
+      // Redirect to setup
+      onResetComplete?.()
     } catch (err) {
       setStatus({ type: 'error', text: typeof err === 'string' ? err : err?.message || 'Reset failed' })
     } finally {
