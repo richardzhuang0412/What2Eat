@@ -1,12 +1,14 @@
 import { invoke } from '@tauri-apps/api/core'
 import { readTextFile, exists } from '@tauri-apps/plugin-fs'
-import { dataPath } from './paths'
+import { getDataDir, dataPath } from './paths'
 
 /**
  * Build the system prompt by reading CLAUDE.md and relevant SKILL.md files.
  */
 async function buildSystemPrompt() {
   const parts = []
+
+  await getDataDir() // ensure path cache
 
   // Read main CLAUDE.md (from data/ — the chef instructions)
   try {

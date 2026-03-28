@@ -1,27 +1,34 @@
-import { resolveResource, appDataDir } from '@tauri-apps/api/path'
+import { invoke } from '@tauri-apps/api/core'
 
-// In development, data/ is relative to the project root.
-// In production, it would be in the app's resource directory.
-// For now, we use a simple approach: resolve relative to cwd.
+let cachedDataDir = null
 
-let dataDir = null
-
+/**
+ * Get the absolute path to the data directory.
+ * Uses a Tauri command to resolve from the Rust side.
+ */
 export async function getDataDir() {
-  if (dataDir) return dataDir
-
-  // In Tauri, we can use the resource dir or a fixed path
-  // For development, data/ is in the project root
+  if (cachedDataDir) return cachedDataDir
   try {
-    // Try resource dir first (production)
-    dataDir = await resolveResource('data')
+    cachedDataDir = await invoke('get_data_dir')
   } catch {
-    // Fallback to relative path (development)
-    dataDir = 'data'
+    cachedDataDir = 'data'
   }
-  return dataDir
+  return cachedDataDir
 }
 
+/**
+ * Build an absolute path to a file in the data directory.
+ */
+export async function dataPathAsync(relativePath) {
+  const dir = await getDataDir()
+  return `${dir}/${relativePath}`
+}
+
+/**
+ * Synchronous data path — uses cached value. Call getDataDir() first.
+ */
 export function dataPath(relativePath) {
-  // Build a path relative to data/ directory
+  if (cachedDataDir) return `${cachedDataDir}/${relativePath}`
+  // Fallback — shouldn't happen after init
   return `data/${relativePath}`
 }

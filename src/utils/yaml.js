@@ -1,12 +1,22 @@
 import yaml from 'js-yaml'
-import { readTextFile, writeTextFile, exists, mkdir } from '@tauri-apps/plugin-fs'
-import { dataPath } from './paths'
+import { readTextFile, writeTextFile, exists } from '@tauri-apps/plugin-fs'
+import { getDataDir, dataPath } from './paths'
+
+// Ensure data dir is resolved before first use
+let initialized = false
+async function ensureInit() {
+  if (!initialized) {
+    await getDataDir()
+    initialized = true
+  }
+}
 
 /**
  * Read and parse a YAML file from the data directory.
  * Returns null if the file doesn't exist.
  */
 export async function readYaml(relativePath) {
+  await ensureInit()
   const path = dataPath(relativePath)
   try {
     const fileExists = await exists(path)
@@ -24,6 +34,7 @@ export async function readYaml(relativePath) {
  * Write a JavaScript object as YAML to a file in the data directory.
  */
 export async function writeYaml(relativePath, data) {
+  await ensureInit()
   const path = dataPath(relativePath)
   try {
     const content = yaml.dump(data, {
@@ -41,9 +52,9 @@ export async function writeYaml(relativePath, data) {
 
 /**
  * Read a markdown file from the data directory.
- * Returns the raw string content.
  */
 export async function readMarkdown(relativePath) {
+  await ensureInit()
   const path = dataPath(relativePath)
   try {
     const fileExists = await exists(path)

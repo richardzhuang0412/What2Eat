@@ -15,12 +15,12 @@ items:
     expires: "2026-04-11"
     notes: ""
   - name: chicken breast
-    quantity: 4
+    quantity: 6
     unit: lbs
     tags: [protein, fridge]
     purchased: "2026-03-27"
     expires: "2026-03-30"
-    notes: "includes 2 lbs chicken tender breast added 2026-03-28"
+    notes: "includes 4 lbs chicken tender breast"
   - name: jasmine rice
     quantity: 5
     unit: lbs
@@ -71,7 +71,7 @@ items:
     expires: "2026-07-20"
     notes: ""
   - name: cucumber
-    quantity: 1
+    quantity: 2
     unit: piece
     tags: [vegetable, fridge]
     purchased: "2026-03-28"

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { readDir, readTextFile, exists } from '@tauri-apps/plugin-fs'
-import { dataPath } from '../utils/paths'
+import { getDataDir, dataPath } from '../utils/paths'
 import { parseFrontmatter } from '../utils/yaml'
 
 /**
@@ -13,6 +13,7 @@ export function useRecipes(pollInterval = 5000) {
 
   const refresh = useCallback(async () => {
     try {
+      await getDataDir() // ensure path cache is populated
       const collectionPath = dataPath('recipes/collection')
       const dirExists = await exists(collectionPath)
       if (!dirExists) {

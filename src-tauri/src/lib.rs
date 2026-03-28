@@ -42,6 +42,18 @@ async fn invoke_claude(args: Vec<String>) -> Result<String, String> {
     Ok(stdout)
 }
 
+/// Return the absolute path to the data directory
+#[command]
+async fn get_data_dir() -> Result<String, String> {
+    let data_dir = std::env::current_dir()
+        .map_err(|e| format!("Failed to get cwd: {}", e))?
+        .parent()
+        .map(|p| p.join("data"))
+        .unwrap_or_else(|| std::path::PathBuf::from("data"));
+
+    Ok(data_dir.to_string_lossy().to_string())
+}
+
 /// Check if claude CLI is available
 #[command]
 async fn check_claude() -> Result<String, String> {
@@ -58,7 +70,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![invoke_claude, check_claude])
+        .invoke_handler(tauri::generate_handler![invoke_claude, check_claude, get_data_dir])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
