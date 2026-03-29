@@ -1,6 +1,16 @@
 import { invoke } from '@tauri-apps/api/core'
 
 /**
+ * Format current local datetime as ISO-like string WITHOUT timezone offset.
+ * e.g. "2026-03-28T22:53" — Claude should use this directly for reminder times.
+ */
+function formatLocalDateTime() {
+  const now = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
+/**
  * Build the system prompt by reading CLAUDE.md and SKILL.md files via Rust.
  */
 async function buildSystemPrompt() {
@@ -47,7 +57,7 @@ When reading or writing files, use paths like inventory/current.yaml, recipes/hi
 - Never mention git, commits, YAML, file paths, or technical details to the user
 - If suggesting recipes, present them as a short numbered list with brief descriptions
 - Be warm and casual — you're a friendly chef assistant
-- Current date and time: ${new Date().toISOString()} (use this for computing exact reminder times)
+- Current LOCAL date and time: ${formatLocalDateTime()} (use this for computing exact reminder times — always write reminders in local time, never UTC)
 `)
 
   return parts.join('\n')

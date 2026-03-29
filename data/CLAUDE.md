@@ -38,14 +38,15 @@ Identify what the user needs and read the relevant SKILL.md before acting:
 
 ## Reminders
 
-When creating reminders, ALWAYS use exact ISO datetime for the `due` field:
+When creating reminders, ALWAYS use exact LOCAL datetime for the `due` field:
 
-1. **Use the current datetime provided in the system prompt** to compute exact times
-2. **Relative times**: "in 5 minutes" → add 5 minutes to current time. "in 1 hour" → add 1 hour. Write as `2026-03-29T14:35` format.
+1. **Use the current LOCAL datetime provided in the system prompt** to compute exact times. The time given is already in the user's local timezone — NOT UTC.
+2. **Relative times**: "in 5 minutes" → add 5 minutes to the current local time. "in 1 hour" → add 1 hour. Write as `2026-03-29T14:35` format (no timezone suffix, no Z).
 3. **Named times**: "tomorrow morning" → next day at 09:00. "tonight" → today at 18:00. "this weekend" → Saturday at 10:00.
 4. **Specific times**: "at 6pm" → today (or tomorrow if past 6pm) at 18:00.
 5. **Always include the time component** — never write just a date like `2026-03-29`, always `2026-03-29T09:00`.
-6. The app sends macOS notifications when reminders are due, so exact times matter.
+6. **Never use UTC or Z suffix** — always local time. The app sends macOS notifications when reminders are due, so exact local times matter.
+7. **Example**: If current time is `2026-03-28T22:53` and user says "in 1 minute", write `due: "2026-03-28T22:54"`.
 
 ## Grocery Logging
 
