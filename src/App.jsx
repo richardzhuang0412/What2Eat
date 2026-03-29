@@ -8,6 +8,7 @@ import Reminders from './components/Reminders'
 import Settings from './components/Settings'
 import Preferences from './components/Preferences'
 import Setup from './components/Setup'
+import { useReminderNotifications } from './hooks/useReminderNotifications'
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -89,6 +90,9 @@ function App() {
     setScratchpad(prev => prev.filter((_, i) => i !== index))
   }, [])
   const clearScratchpad = useCallback(() => setScratchpad([]), [])
+
+  // macOS notifications for due reminders (polls every 60s)
+  useReminderNotifications(60000)
 
   // Check if first-run setup is needed
   useEffect(() => {

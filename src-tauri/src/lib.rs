@@ -388,6 +388,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             invoke_claude, check_claude, get_data_dir,
             read_data_file, write_data_file, data_file_exists, list_data_dir,
