@@ -1,7 +1,13 @@
 reminders:
-  - id: 1
-    created: 2026-03-29
-    due: 2026-04-04
-    text: "Go grocery shopping"
+  - id: 2
+    created: "2026-03-29"
+    due: "2026-03-29T00:01"
+    text: Defrost the meat
     status: pending
-    context: "Reminder set for the weekend"
+    context: Reminder set for 1 minute from now
+  - id: 1
+    created: "2026-03-29"
+    due: "2026-04-04"
+    text: Go grocery shopping
+    status: pending
+    context: Reminder set for the weekend
