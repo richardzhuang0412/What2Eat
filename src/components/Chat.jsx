@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
+import { convertFileSrc } from '@tauri-apps/api/core'
 import { useClaudeChat } from '../hooks/useClaudeChat'
 import { getLoadingMessage } from '../utils/loadingMessages'
 
@@ -47,22 +48,30 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
     const text = input.trim()
     if ((!text && !pendingImage) || isThinking) return
 
-    let message = text
+    let claudeMessage = text
+    let displayText = text
+    let imageSource = null
+
     if (pendingImage) {
-      // Save the image to data/.uploads/ so Claude can read it
       try {
         const relativePath = await invoke('save_upload', { filePath: pendingImage.path })
         const imageContext = text || 'I took a photo. What do you see?'
-        message = `${imageContext}\n\n[Photo attached — read the image at "${relativePath}" to see what's in it]`
+        // What Claude sees (includes file path instruction)
+        claudeMessage = `${imageContext}\n\n[Photo attached — read the image at "${relativePath}" to see what's in it]`
+        // What the user sees (just their text, or a generic label)
+        displayText = text || ''
+        imageSource = pendingImage.path
       } catch (err) {
         console.error('Failed to save upload:', err)
-        message = text || 'I tried to upload a photo but it failed'
+        claudeMessage = text || 'I tried to upload a photo but it failed'
+        displayText = claudeMessage
       }
       setPendingImage(null)
     }
 
-    setLoadingMsg(getLoadingMessage(message))
-    send(message)
+    setLoadingMsg(getLoadingMessage(claudeMessage))
+    // Send with display override and image
+    send(claudeMessage, { displayText, image: imageSource })
     setInput('')
   }
 
@@ -133,7 +142,7 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
             )}
             <div
               className={`
-                max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap
+                max-w-[75%] rounded-2xl text-sm leading-relaxed overflow-hidden
                 ${msg.role === 'user'
                   ? 'bg-[var(--color-sage)] text-white rounded-br-md'
                   : msg.text === '(stopped)'
@@ -142,7 +151,23 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
                 }
               `}
             >
-              {msg.text || '...'}
+              {/* Image attachment */}
+              {msg.image && (
+                <div className="p-1">
+                  <img
+                    src={convertFileSrc(msg.image)}
+                    alt="Uploaded photo"
+                    className="rounded-xl max-h-48 w-full object-cover"
+                    onError={(e) => { e.target.style.display = 'none' }}
+                  />
+                </div>
+              )}
+              {/* Text content */}
+              {(msg.text || (!msg.image && '...')) && (
+                <div className="px-4 py-3 whitespace-pre-wrap">
+                  {msg.text}
+                </div>
+              )}
             </div>
           </div>
         ))}

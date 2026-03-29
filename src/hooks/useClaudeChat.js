@@ -13,14 +13,21 @@ export function useClaudeChat() {
   const abortedRef = useRef(false)
   const lastUserMessageRef = useRef(null)
 
-  const send = useCallback(async (userText) => {
+  const send = useCallback(async (userText, options = {}) => {
     if (!userText.trim() || isThinking) return
+
+    const { displayText, image } = options
 
     setError(null)
     abortedRef.current = false
     lastUserMessageRef.current = userText
 
-    setMessages((prev) => [...prev, { role: 'user', text: userText }])
+    // Show the display version (not the Claude prompt) in the chat
+    setMessages((prev) => [...prev, {
+      role: 'user',
+      text: displayText !== undefined ? displayText : userText,
+      image,
+    }])
     setIsThinking(true)
 
     try {
