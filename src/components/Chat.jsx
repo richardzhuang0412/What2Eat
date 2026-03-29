@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { open } from '@tauri-apps/plugin-dialog'
 import { useClaudeChat } from '../hooks/useClaudeChat'
 import { getLoadingMessage } from '../utils/loadingMessages'
 
@@ -8,6 +9,7 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
   const [input, setInput] = useState('')
   const [loadingMsg, setLoadingMsg] = useState('')
   const [assistantName, setAssistantName] = useState('Chef')
+  const [pendingImage, setPendingImage] = useState(null) // { path, preview }
   const messagesEndRef = useRef(null)
   const sentPromptsRef = useRef(new Set())
 
@@ -41,11 +43,42 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
     }
   }, [initialPrompt])
 
-  const handleSend = () => {
-    if (!input.trim() || isThinking) return
-    setLoadingMsg(getLoadingMessage(input))
-    send(input.trim())
+  const handleSend = async () => {
+    const text = input.trim()
+    if ((!text && !pendingImage) || isThinking) return
+
+    let message = text
+    if (pendingImage) {
+      // Save the image to data/.uploads/ so Claude can read it
+      try {
+        const relativePath = await invoke('save_upload', { filePath: pendingImage.path })
+        const imageContext = text || 'I took a photo. What do you see?'
+        message = `${imageContext}\n\n[Photo attached — read the image at "${relativePath}" to see what's in it]`
+      } catch (err) {
+        console.error('Failed to save upload:', err)
+        message = text || 'I tried to upload a photo but it failed'
+      }
+      setPendingImage(null)
+    }
+
+    setLoadingMsg(getLoadingMessage(message))
+    send(message)
     setInput('')
+  }
+
+  const handlePhotoUpload = async () => {
+    try {
+      const filePath = await open({
+        title: 'Upload a photo',
+        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'heic', 'webp'] }],
+        multiple: false,
+      })
+      if (filePath) {
+        setPendingImage({ path: filePath, name: filePath.split('/').pop() })
+      }
+    } catch (err) {
+      console.error('Photo picker failed:', err)
+    }
   }
 
   // Also set loading message for cross-panel prompts
@@ -153,13 +186,39 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
           </div>
         ) : (
           <>
-            <div className="flex gap-3">
+            {/* Pending image preview */}
+            {pendingImage && (
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-[var(--color-peach)]/30">
+                  <span className="text-sm">📷</span>
+                  <span className="text-xs text-[var(--color-text)] truncate max-w-[200px]">{pendingImage.name}</span>
+                  <button
+                    onClick={() => setPendingImage(null)}
+                    className="text-xs text-[var(--color-text-light)] hover:text-[var(--color-danger)] cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <span className="text-xs text-[var(--color-text-light)]">Add a message or just hit Send</span>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {/* Photo upload button */}
+              <button
+                onClick={handlePhotoUpload}
+                title="Upload a photo (groceries, expiry dates, recipes)"
+                className="px-3 py-3 rounded-xl bg-white border border-[var(--color-peach)]/50
+                           text-lg hover:bg-[var(--color-peach)]/20 transition-colors cursor-pointer"
+              >
+                📷
+              </button>
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="What should I eat tonight?"
+                placeholder={pendingImage ? "Add a note about this photo..." : "What should I eat tonight?"}
                 className="flex-1 px-4 py-3 rounded-xl bg-white border border-[var(--color-peach)]/50
                            text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-light)]/50
                            focus:outline-none focus:border-[var(--color-sage)] focus:ring-1 focus:ring-[var(--color-sage)]/30
@@ -167,7 +226,7 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
               />
               <button
                 onClick={handleSend}
-                disabled={!input.trim()}
+                disabled={!input.trim() && !pendingImage}
                 className="px-5 py-3 bg-[var(--color-sage)] text-white rounded-xl text-sm font-medium
                            hover:bg-[var(--color-sage-dark)] disabled:opacity-40 disabled:cursor-not-allowed
                            transition-colors cursor-pointer"

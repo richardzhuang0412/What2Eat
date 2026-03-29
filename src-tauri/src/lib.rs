@@ -327,6 +327,50 @@ async fn reset_data() -> Result<String, String> {
     Ok("All user data reset to defaults".to_string())
 }
 
+/// Save an uploaded image to data/.uploads/ and return the relative path.
+/// Claude can then read the image via its Read tool.
+#[command]
+async fn save_upload(file_path: String) -> Result<String, String> {
+    let data_dir = get_data_dir_path()?;
+    let uploads_dir = data_dir.join(".uploads");
+    std::fs::create_dir_all(&uploads_dir)
+        .map_err(|e| format!("Failed to create uploads dir: {}", e))?;
+
+    let source = std::path::Path::new(&file_path);
+    if !source.exists() {
+        return Err(format!("File not found: {}", file_path));
+    }
+
+    let ext = source.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("jpg");
+    let filename = format!("upload-{}.{}", chrono_timestamp(), ext);
+    let dest = uploads_dir.join(&filename);
+
+    std::fs::copy(source, &dest)
+        .map_err(|e| format!("Failed to copy file: {}", e))?;
+
+    Ok(format!(".uploads/{}", filename))
+}
+
+/// Clean up old uploads
+#[command]
+async fn clean_uploads() -> Result<String, String> {
+    let data_dir = get_data_dir_path()?;
+    let uploads_dir = data_dir.join(".uploads");
+    if uploads_dir.exists() {
+        std::fs::remove_dir_all(&uploads_dir)
+            .map_err(|e| format!("Failed to clean uploads: {}", e))?;
+    }
+    Ok("Uploads cleaned".to_string())
+}
+
+fn chrono_timestamp() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
+    format!("{}", secs)
+}
+
 /// Check if claude CLI is available
 #[command]
 async fn check_claude() -> Result<String, String> {
@@ -347,7 +391,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             invoke_claude, check_claude, get_data_dir,
             read_data_file, write_data_file, data_file_exists, list_data_dir,
-            export_data, import_data, validate_imported_data, reset_data
+            export_data, import_data, validate_imported_data, reset_data,
+            save_upload, clean_uploads
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

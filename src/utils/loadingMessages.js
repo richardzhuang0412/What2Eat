@@ -5,6 +5,15 @@
 
 const contextPatterns = [
   {
+    match: /\b(photo|image|picture|upload|attached|\.jpg|\.png)\b/i,
+    messages: [
+      "Looking at your photo...",
+      "Analyzing the image...",
+      "Let me see what's in the picture...",
+      "Scanning your photo...",
+    ],
+  },
+  {
     match: /\b(bought|shopping|grocery|picked up|got|store)\b/i,
     messages: [
       "Updating your kitchen inventory...",
