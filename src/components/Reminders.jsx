@@ -1,8 +1,15 @@
+import { useState, useEffect } from 'react'
 import { useYamlData } from '../hooks/useYamlData'
 import { writeYaml } from '../utils/yaml'
 
 function Reminders({ onAskChef, onPasteToChat }) {
   const { data, loading, refresh } = useYamlData('reminders/active.yaml')
+  // Force re-render every 15s to update relative time labels
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 15000)
+    return () => clearInterval(interval)
+  }, [])
 
   const reminders = data?.reminders || []
   const pending = reminders.filter(r => r.status === 'pending')
@@ -196,13 +203,18 @@ function ReminderItem({ reminder, onToggle, onRemove }) {
       </div>
 
       {!isDone && (
-        <span className={`text-xs font-medium whitespace-nowrap ${
-          overdue ? 'text-[var(--color-danger)]' :
-          dueToday ? 'text-[var(--color-warning)]' :
-          'text-[var(--color-text-light)]'
-        }`}>
-          {formatDue(reminder.due)}
-        </span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {overdue && (
+            <span className="w-2 h-2 rounded-full bg-[var(--color-danger)] animate-pulse" />
+          )}
+          <span className={`text-xs font-medium whitespace-nowrap ${
+            overdue ? 'text-[var(--color-danger)]' :
+            dueToday ? 'text-[var(--color-warning)]' :
+            'text-[var(--color-text-light)]'
+          }`}>
+            {formatDue(reminder.due)}
+          </span>
+        </div>
       )}
       {isDone && onRemove && (
         <button
@@ -233,7 +245,18 @@ function formatDue(dueStr) {
   const due = new Date(dueStr)
   const now = new Date()
 
-  if (isOverdue(dueStr)) return 'Overdue'
+  if (isOverdue(dueStr)) {
+    const diffMs = now - due
+    const diffMin = Math.floor(diffMs / 60000)
+    const diffHrs = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMin < 1) return 'Just now!'
+    if (diffMin < 60) return `${diffMin}m overdue`
+    if (diffHrs < 24) return `${diffHrs}h overdue`
+    return `${diffDays}d overdue`
+  }
+
   if (isDueToday(dueStr)) {
     if (dueStr.includes('T')) {
       return `Today ${due.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
@@ -241,7 +264,13 @@ function formatDue(dueStr) {
     return 'Today'
   }
 
-  const days = Math.ceil((due - now) / (1000 * 60 * 60 * 24))
+  const diffMs = due - now
+  const diffMin = Math.floor(diffMs / 60000)
+  const diffHrs = Math.floor(diffMs / 3600000)
+  const days = Math.ceil(diffMs / 86400000)
+
+  if (diffMin <= 60) return `In ${diffMin} min`
+  if (diffHrs < 24) return `In ${diffHrs}h`
   if (days === 1) return 'Tomorrow'
   if (days <= 7) return `In ${days} days`
   return due.toLocaleDateString([], { month: 'short', day: 'numeric' })

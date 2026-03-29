@@ -54,8 +54,11 @@ export function useReminderNotifications(pollInterval = 15000) {
           const diffMs = dueDate - now
           const state = stateRef.current[reminder.id]
 
+          console.log(`[Notifications] Reminder ${reminder.id}: "${reminder.text}" due=${reminder.due} diffMs=${diffMs} state=${state}`)
+
           // Stage 2: Due now or overdue → fire main notification
           if (diffMs <= 0 && state !== 'fired') {
+            console.log(`[Notifications] FIRING: ${reminder.text}`)
             sendNotification({
               title: '⏰ Reminder — now!',
               body: reminder.text,
@@ -65,6 +68,7 @@ export function useReminderNotifications(pollInterval = 15000) {
           // Stage 1: Within 5 minutes → early warning
           else if (diffMs > 0 && diffMs <= fiveMinutes && !state) {
             const minutesLeft = Math.ceil(diffMs / 60000)
+            console.log(`[Notifications] WARNING (${minutesLeft}min): ${reminder.text}`)
             sendNotification({
               title: `⏰ Coming up in ${minutesLeft} min`,
               body: reminder.text,
