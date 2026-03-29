@@ -371,6 +371,27 @@ fn chrono_timestamp() -> String {
     format!("{}", secs)
 }
 
+/// Send a macOS notification via osascript (fallback if plugin fails)
+#[command]
+async fn send_notification(title: String, body: String) -> Result<(), String> {
+    let script = format!(
+        r#"display notification "{}" with title "{}""#,
+        body.replace('"', r#"\""#),
+        title.replace('"', r#"\""#)
+    );
+
+    let output = StdCommand::new("osascript")
+        .args(["-e", &script])
+        .output()
+        .map_err(|e| format!("osascript failed: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!("Notification failed: {}", String::from_utf8_lossy(&output.stderr)));
+    }
+
+    Ok(())
+}
+
 /// Check if claude CLI is available
 #[command]
 async fn check_claude() -> Result<String, String> {
@@ -393,7 +414,8 @@ pub fn run() {
             invoke_claude, check_claude, get_data_dir,
             read_data_file, write_data_file, data_file_exists, list_data_dir,
             export_data, import_data, validate_imported_data, reset_data,
-            save_upload, clean_uploads
+            save_upload, clean_uploads,
+            send_notification
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

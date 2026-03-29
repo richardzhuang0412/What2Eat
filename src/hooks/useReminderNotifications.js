@@ -26,11 +26,16 @@ export function useReminderNotifications(pollInterval = 15000) {
 
       try {
         let granted = await isPermissionGranted()
+        console.log('[Notifications] Permission granted:', granted)
         if (!granted) {
           const permission = await requestPermission()
+          console.log('[Notifications] Permission request result:', permission)
           granted = permission === 'granted'
         }
-        if (!granted) return
+        if (!granted) {
+          console.log('[Notifications] No permission, skipping')
+          return
+        }
 
         const content = await invoke('read_data_file', { relativePath: 'reminders/active.yaml' })
         const data = yaml.load(content, { schema: yaml.JSON_SCHEMA })
@@ -59,20 +64,41 @@ export function useReminderNotifications(pollInterval = 15000) {
           // Stage 2: Due now or overdue → fire main notification
           if (diffMs <= 0 && state !== 'fired') {
             console.log(`[Notifications] FIRING: ${reminder.text}`)
-            sendNotification({
-              title: '⏰ Reminder — now!',
-              body: reminder.text,
-            })
+            try {
+              await sendNotification({
+                title: '⏰ Reminder — now!',
+                body: reminder.text,
+              })
+              console.log('[Notifications] Notification sent successfully')
+            } catch (e) {
+              console.error('[Notifications] sendNotification failed:', e)
+              // Fallback: use Rust-side notification
+              try {
+                await invoke('send_notification', { title: '⏰ Reminder — now!', body: reminder.text })
+                console.log('[Notifications] Fallback notification sent')
+              } catch (e2) {
+                console.error('[Notifications] Fallback also failed:', e2)
+              }
+            }
             stateRef.current[reminder.id] = 'fired'
           }
           // Stage 1: Within 5 minutes → early warning
           else if (diffMs > 0 && diffMs <= fiveMinutes && !state) {
             const minutesLeft = Math.ceil(diffMs / 60000)
             console.log(`[Notifications] WARNING (${minutesLeft}min): ${reminder.text}`)
-            sendNotification({
-              title: `⏰ Coming up in ${minutesLeft} min`,
-              body: reminder.text,
-            })
+            try {
+              await sendNotification({
+                title: `⏰ Coming up in ${minutesLeft} min`,
+                body: reminder.text,
+              })
+            } catch (e) {
+              console.error('[Notifications] Warning notification failed:', e)
+              try {
+                await invoke('send_notification', { title: `⏰ Coming up in ${minutesLeft} min`, body: reminder.text })
+              } catch (e2) {
+                console.error('[Notifications] Warning fallback failed:', e2)
+              }
+            }
             stateRef.current[reminder.id] = 'warned'
           }
         }
