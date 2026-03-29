@@ -5,7 +5,10 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { useClaudeChat } from '../hooks/useClaudeChat'
 import { getLoadingMessage } from '../utils/loadingMessages'
 
-function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
+import Scratchpad from './Scratchpad'
+
+function Chat({ initialPrompt, onPromptConsumed, pasteText, onPasteConsumed, onConversationChange,
+                scratchpad, onScratchpadAdd, onScratchpadRemove, onScratchpadClear }) {
   const { messages, isThinking, error, send, stop, reload, clear, hasConversation } = useClaudeChat()
   const [input, setInput] = useState('')
   const [loadingMsg, setLoadingMsg] = useState('')
@@ -34,6 +37,14 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
   useEffect(() => {
     onConversationChange?.(hasConversation)
   }, [hasConversation, onConversationChange])
+
+  // Handle pasted text (fills input without sending)
+  useEffect(() => {
+    if (pasteText) {
+      setInput(pasteText)
+      onPasteConsumed?.()
+    }
+  }, [pasteText])
 
   // Handle prompts from other panels
   useEffect(() => {
@@ -196,6 +207,15 @@ function Chat({ initialPrompt, onPromptConsumed, onConversationChange }) {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Scratchpad */}
+      <Scratchpad
+        items={scratchpad}
+        onAdd={onScratchpadAdd}
+        onRemove={onScratchpadRemove}
+        onClear={onScratchpadClear}
+        onUseInChat={(text) => setInput(text)}
+      />
 
       {/* Input / Stop area */}
       <div className="px-4 py-4 border-t border-[var(--color-peach)]/30">

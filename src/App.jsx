@@ -72,8 +72,23 @@ function App() {
   const [needsSetup, setNeedsSetup] = useState(null) // null = checking, true/false
   const [activeView, setActiveView] = useState('chat')
   const [chatPrompt, setChatPrompt] = useState(null)
+  const [chatPasteText, setChatPasteText] = useState(null) // text to paste into input (not send)
   const [pendingPrompt, setPendingPrompt] = useState(null)
   const chatHasConversationRef = useRef(false)
+
+  // Scratchpad state (shared across tabs)
+  const [scratchpad, setScratchpad] = useState([])
+  const addToScratchpad = useCallback((ingredient) => {
+    setScratchpad(prev => {
+      const lower = ingredient.toLowerCase().trim()
+      if (prev.some(i => i.toLowerCase() === lower)) return prev
+      return [...prev, ingredient.trim()]
+    })
+  }, [])
+  const removeFromScratchpad = useCallback((index) => {
+    setScratchpad(prev => prev.filter((_, i) => i !== index))
+  }, [])
+  const clearScratchpad = useCallback(() => setScratchpad([]), [])
 
   // Check if first-run setup is needed
   useEffect(() => {
@@ -92,6 +107,12 @@ function App() {
 
   const handleChatStateChange = useCallback((hasConversation) => {
     chatHasConversationRef.current = hasConversation
+  }, [])
+
+  // Paste text into chat input (doesn't send, lets user edit first)
+  const pasteToChat = useCallback((text) => {
+    setChatPasteText(text)
+    setActiveView('chat')
   }, [])
 
   const goToChat = useCallback((prompt) => {
@@ -139,11 +160,26 @@ function App() {
           <Chat
             initialPrompt={chatPrompt}
             onPromptConsumed={() => setChatPrompt(null)}
+            pasteText={chatPasteText}
+            onPasteConsumed={() => setChatPasteText(null)}
             onConversationChange={handleChatStateChange}
+            scratchpad={scratchpad}
+            onScratchpadAdd={addToScratchpad}
+            onScratchpadRemove={removeFromScratchpad}
+            onScratchpadClear={clearScratchpad}
           />
         </div>
         <ErrorBoundary key={activeView}>
-          {activeView === 'inventory' && <Inventory onAskChef={goToChat} />}
+          {activeView === 'inventory' && (
+            <Inventory
+              onAskChef={goToChat}
+              onPasteToChat={pasteToChat}
+              scratchpad={scratchpad}
+              onScratchpadAdd={addToScratchpad}
+              onScratchpadRemove={removeFromScratchpad}
+              onScratchpadClear={clearScratchpad}
+            />
+          )}
           {activeView === 'recipes' && <Recipes onAskChef={goToChat} />}
           {activeView === 'reminders' && <Reminders onAskChef={goToChat} />}
           {activeView === 'preferences' && <Preferences onRedoSetup={() => setNeedsSetup(true)} />}

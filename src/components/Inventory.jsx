@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useYamlData } from '../hooks/useYamlData'
+import Scratchpad from './Scratchpad'
 
 const FILTERS = [
   { key: 'all', label: 'All', icon: '📋' },
@@ -8,7 +9,8 @@ const FILTERS = [
   { key: 'pantry', label: 'Pantry', icon: '🏠' },
 ]
 
-function Inventory({ onAskChef }) {
+function Inventory({ onAskChef, onPasteToChat, scratchpad, onScratchpadAdd, onScratchpadRemove, onScratchpadClear }) {
+  const [expandedItem, setExpandedItem] = useState(null) // item name or null
   const { data, loading } = useYamlData('inventory/current.yaml')
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -179,7 +181,18 @@ function Inventory({ onAskChef }) {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {section.items.map((item, i) => (
-                <InventoryCard key={`${section.key}-${i}`} item={item} getExpiryDays={getExpiryDays} getExpiryColor={getExpiryColor} getExpiryLabel={getExpiryLabel} onAskChef={onAskChef} />
+                <InventoryCard
+                  key={`${section.key}-${i}`}
+                  item={item}
+                  getExpiryDays={getExpiryDays}
+                  getExpiryColor={getExpiryColor}
+                  getExpiryLabel={getExpiryLabel}
+                  isExpanded={expandedItem === `${section.key}-${i}`}
+                  onToggle={() => setExpandedItem(expandedItem === `${section.key}-${i}` ? null : `${section.key}-${i}`)}
+                  onAddToScratchpad={() => onScratchpadAdd(item.name)}
+                  onPasteToChat={onPasteToChat}
+                  inScratchpad={scratchpad.some(s => s.toLowerCase() === item.name.toLowerCase())}
+                />
               ))}
             </div>
           </div>
@@ -187,7 +200,18 @@ function Inventory({ onAskChef }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((item, i) => (
-            <InventoryCard key={i} item={item} getExpiryDays={getExpiryDays} getExpiryColor={getExpiryColor} getExpiryLabel={getExpiryLabel} onAskChef={onAskChef} />
+            <InventoryCard
+              key={`filtered-${i}`}
+              item={item}
+              getExpiryDays={getExpiryDays}
+              getExpiryColor={getExpiryColor}
+              getExpiryLabel={getExpiryLabel}
+              isExpanded={expandedItem === `filtered-${i}`}
+              onToggle={() => setExpandedItem(expandedItem === `filtered-${i}` ? null : `filtered-${i}`)}
+              onAddToScratchpad={() => onScratchpadAdd(item.name)}
+              onPasteToChat={onPasteToChat}
+              inScratchpad={scratchpad.some(s => s.toLowerCase() === item.name.toLowerCase())}
+            />
           ))}
         </div>
       )}
@@ -197,35 +221,91 @@ function Inventory({ onAskChef }) {
           <span className="text-sm text-[var(--color-text-light)]">No items match your search</span>
         </div>
       )}
+
+      {/* Scratchpad */}
+      <div className="fixed bottom-0 left-20 right-0">
+        <Scratchpad
+          items={scratchpad}
+          onAdd={onScratchpadAdd}
+          onRemove={onScratchpadRemove}
+          onClear={onScratchpadClear}
+          onUseInChat={(text) => onPasteToChat(text)}
+        />
+      </div>
     </div>
   )
 }
 
-function InventoryCard({ item, getExpiryDays, getExpiryColor, getExpiryLabel, onAskChef }) {
+function InventoryCard({ item, getExpiryDays, getExpiryColor, getExpiryLabel, isExpanded, onToggle, onAddToScratchpad, onPasteToChat, inScratchpad }) {
   const days = getExpiryDays(item.expires)
 
   return (
     <div
-      onClick={() => onAskChef?.(`What can I make with ${item.name}?`)}
-      className="bg-white rounded-xl p-4 border border-[var(--color-peach)]/30 shadow-sm
-                 hover:shadow-md hover:border-[var(--color-sage)]/40 transition-all cursor-pointer group"
+      onClick={onToggle}
+      className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer
+                 ${isExpanded ? 'border-[var(--color-sage)]/50' : 'border-[var(--color-peach)]/30 hover:border-[var(--color-sage)]/40'}`}
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-medium text-sm capitalize group-hover:text-[var(--color-sage-dark)] transition-colors">
-            {item.name}
-          </h3>
-          <p className="text-xs text-[var(--color-text-light)] mt-0.5">
-            {item.quantity} {item.unit}
-          </p>
-          {item.notes && (
-            <p className="text-xs text-[var(--color-text-light)] mt-1 italic">{item.notes}</p>
-          )}
+      <div className="p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="font-medium text-sm capitalize">
+              {item.name}
+              {inScratchpad && <span className="ml-1.5 text-xs text-[var(--color-sage)]">🧺</span>}
+            </h3>
+            <p className="text-xs text-[var(--color-text-light)] mt-0.5">
+              {item.quantity} {item.unit}
+            </p>
+          </div>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${getExpiryColor(days)}`}>
+            {getExpiryLabel(days)}
+          </span>
         </div>
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${getExpiryColor(days)}`}>
-          {getExpiryLabel(days)}
-        </span>
       </div>
+
+      {/* Expanded detail */}
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-0 border-t border-[var(--color-peach)]/15" onClick={(e) => e.stopPropagation()}>
+          <div className="grid grid-cols-2 gap-2 text-xs mt-3 mb-3">
+            {item.tags && (
+              <div className="col-span-2 flex flex-wrap gap-1">
+                {item.tags.map(tag => (
+                  <span key={tag} className="px-1.5 py-0.5 rounded bg-[var(--color-peach)]/25 text-[var(--color-text-light)] capitalize">{tag}</span>
+                ))}
+              </div>
+            )}
+            {item.purchased && (
+              <div><span className="text-[var(--color-text-light)]">Bought:</span> {item.purchased}</div>
+            )}
+            {item.expires && (
+              <div><span className="text-[var(--color-text-light)]">Expires:</span> {item.expires} ({days}d)</div>
+            )}
+            {item.notes && (
+              <div className="col-span-2 italic text-[var(--color-text-light)]">{item.notes}</div>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => onAddToScratchpad()}
+              disabled={inScratchpad}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                inScratchpad
+                  ? 'bg-[var(--color-sage)]/10 text-[var(--color-sage)] cursor-default'
+                  : 'bg-[var(--color-sage)]/15 text-[var(--color-sage-dark)] hover:bg-[var(--color-sage)]/30'
+              }`}
+            >
+              {inScratchpad ? '✓ In scratchpad' : '🧺 Add to scratchpad'}
+            </button>
+            <button
+              onClick={() => onPasteToChat?.(`What can I make with ${item.name}?`)}
+              className="text-xs px-3 py-1.5 rounded-lg bg-[var(--color-peach)]/25 text-[var(--color-text)]
+                         hover:bg-[var(--color-peach)]/50 transition-colors cursor-pointer"
+            >
+              Ask about this
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
