@@ -1,6 +1,6 @@
 use std::process::Command as StdCommand;
 use tauri::command;
-use tauri_plugin_notification::NotificationExt;
+// tauri_plugin_notification kept as dependency for future production builds
 
 /// Invoke Claude CLI with working directory set to data/ so it only
 /// discovers chef context (data/CLAUDE.md), not dev context (root CLAUDE.md).
@@ -372,51 +372,33 @@ fn chrono_timestamp() -> String {
     format!("{}", secs)
 }
 
-/// Send a macOS notification — tries Tauri plugin first (proper app icon + sound),
-/// falls back to osascript if that fails.
+/// Send a macOS notification by writing an AppleScript temp file and executing it.
 #[command]
-async fn send_notification(app: tauri::AppHandle, title: String, body: String) -> Result<(), String> {
-    // Try Tauri notification plugin (shows app icon, supports sound)
-    let tauri_result = app.notification()
-        .builder()
-        .title(&title)
-        .body(&body)
-        .sound("default")
-        .show();
+async fn send_notification(title: String, body: String) -> Result<(), String> {
+    let safe_title = title.replace('"', "'").replace('\\', "");
+    let safe_body = body.replace('"', "'").replace('\\', "");
 
-    match tauri_result {
-        Ok(_) => return Ok(()),
-        Err(e) => {
-            eprintln!("Tauri notification failed: {}, trying osascript", e);
-        }
-    }
-
-    // Fallback: osascript via stdin
-    use std::io::Write;
-
+    // Write script to a temp file to avoid all encoding/quoting issues
+    let tmp_path = std::env::temp_dir().join("what2eat_notify.scpt");
     let script = format!(
         "display notification \"{}\" with title \"{}\" subtitle \"What2Eat\" sound name \"Glass\"",
-        body.replace('\\', "\\\\").replace('"', "\\\""),
-        title.replace('\\', "\\\\").replace('"', "\\\"")
+        safe_body, safe_title
     );
 
-    let mut child = StdCommand::new("osascript")
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("osascript spawn failed: {}", e))?;
+    std::fs::write(&tmp_path, &script)
+        .map_err(|e| format!("Failed to write script: {}", e))?;
 
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(script.as_bytes())
-            .map_err(|e| format!("Failed to write script: {}", e))?;
-    }
+    let output = StdCommand::new("osascript")
+        .arg(&tmp_path)
+        .output()
+        .map_err(|e| format!("osascript failed: {}", e))?;
 
-    let output = child.wait_with_output()
-        .map_err(|e| format!("osascript wait failed: {}", e))?;
+    // Clean up
+    std::fs::remove_file(&tmp_path).ok();
 
     if !output.status.success() {
-        return Err(format!("Notification failed: {}", String::from_utf8_lossy(&output.stderr)));
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Notification failed (exit {}): {}", output.status.code().unwrap_or(-1), stderr));
     }
 
     Ok(())
