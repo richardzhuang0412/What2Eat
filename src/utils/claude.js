@@ -47,7 +47,7 @@ When reading or writing files, use paths like inventory/current.yaml, recipes/hi
 - Never mention git, commits, YAML, file paths, or technical details to the user
 - If suggesting recipes, present them as a short numbered list with brief descriptions
 - Be warm and casual — you're a friendly chef assistant
-- Today's date is ${new Date().toISOString().split('T')[0]}
+- Current date and time: ${new Date().toISOString()} (use this for computing exact reminder times)
 `)
 
   return parts.join('\n')
