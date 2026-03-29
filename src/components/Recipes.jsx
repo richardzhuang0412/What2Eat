@@ -46,13 +46,22 @@ function Recipes({ onAskChef }) {
     <div className="h-full overflow-y-auto p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-[var(--color-text)]">Recipes</h1>
-        <button
-          onClick={() => onAskChef?.("What should I cook tonight?")}
-          className="text-sm px-3 py-1.5 rounded-lg bg-[var(--color-sage)] text-white
-                     hover:bg-[var(--color-sage-dark)] transition-colors cursor-pointer"
-        >
-          Suggest something
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onAskChef?.("Search for a new recipe")}
+            className="text-sm px-3 py-1.5 rounded-lg bg-white border border-[var(--color-peach)]/50
+                       text-[var(--color-text)] hover:bg-[var(--color-peach)]/20 transition-colors cursor-pointer"
+          >
+            + Find recipe
+          </button>
+          <button
+            onClick={() => onAskChef?.("What should I cook tonight?")}
+            className="text-sm px-3 py-1.5 rounded-lg bg-[var(--color-sage)] text-white
+                       hover:bg-[var(--color-sage-dark)] transition-colors cursor-pointer"
+          >
+            Suggest something
+          </button>
+        </div>
       </div>
 
       {/* Recipe detail modal */}

@@ -57,7 +57,16 @@ function Reminders({ onAskChef }) {
     <div className="h-full overflow-y-auto p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-[var(--color-text)]">Reminders</h1>
-        <span className="text-sm text-[var(--color-text-light)]">{pending.length} pending</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-[var(--color-text-light)]">{pending.length} pending</span>
+          <button
+            onClick={() => onAskChef?.("Set a reminder for me")}
+            className="text-sm px-3 py-1.5 rounded-lg bg-[var(--color-sage)] text-white
+                       hover:bg-[var(--color-sage-dark)] transition-colors cursor-pointer"
+          >
+            + New reminder
+          </button>
+        </div>
       </div>
 
       {/* Overdue banner */}

@@ -109,7 +109,16 @@ function Inventory({ onAskChef }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-[var(--color-text)]">Kitchen Inventory</h1>
-        <span className="text-sm text-[var(--color-text-light)]">{items.length} items</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-[var(--color-text-light)]">{items.length} items</span>
+          <button
+            onClick={() => onAskChef?.("I just went grocery shopping")}
+            className="text-sm px-3 py-1.5 rounded-lg bg-[var(--color-sage)] text-white
+                       hover:bg-[var(--color-sage-dark)] transition-colors cursor-pointer"
+          >
+            + Log groceries
+          </button>
+        </div>
       </div>
 
       {/* Expiring soon banner */}

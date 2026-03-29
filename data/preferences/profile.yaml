@@ -4,12 +4,20 @@ dietary:
   dislikes: []
   favorites: []
 cooking:
-  skill_level: intermediate
-  equipment: []
-  max_prep_time: null
+  skill_level: beginner
+  equipment:
+    - rice cooker
+    - wok
+    - microwave
+  max_prep_time: 45min
   default_servings: 1
 cuisines:
-  favorites: []
+  favorites:
+    - chinese
+    - japanese
+    - korean
+    - thai
+    - italian
   want_to_try: []
   avoid: []
 notes: []

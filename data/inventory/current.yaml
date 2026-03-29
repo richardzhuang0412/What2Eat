@@ -1,2 +1,128 @@
-last_updated: null
-items: []
+last_updated: '2026-03-29'
+items:
+  - name: salt
+    quantity: 1
+    unit: bottle
+    tags:
+      - spice
+      - pantry
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: black pepper
+    quantity: 1
+    unit: bottle
+    tags:
+      - spice
+      - pantry
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: ginger
+    quantity: 1
+    unit: bottle
+    tags:
+      - spice
+      - pantry
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: garlic powder
+    quantity: 1
+    unit: bottle
+    tags:
+      - spice
+      - pantry
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: fish sauce
+    quantity: 1
+    unit: bag
+    tags:
+      - pantry
+      - staple
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: oyster sauce
+    quantity: 1
+    unit: bag
+    tags:
+      - pantry
+      - staple
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: sugar
+    quantity: 1
+    unit: bag
+    tags:
+      - pantry
+      - staple
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: vinegar
+    quantity: 1
+    unit: bag
+    tags:
+      - pantry
+      - staple
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: soy sauce
+    quantity: 1
+    unit: bag
+    tags:
+      - pantry
+      - staple
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: rice
+    quantity: 1
+    unit: bag
+    tags:
+      - pantry
+      - staple
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: ketchup
+    quantity: 1
+    unit: bag
+    tags:
+      - pantry
+      - staple
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: flour
+    quantity: 1
+    unit: bag
+    tags:
+      - pantry
+      - staple
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: olive oil
+    quantity: 1
+    unit: bottle
+    tags:
+      - oil
+      - pantry
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
+  - name: vegetable oil
+    quantity: 1
+    unit: bottle
+    tags:
+      - oil
+      - pantry
+    purchased: '2026-03-29'
+    expires: null
+    notes: added during setup
