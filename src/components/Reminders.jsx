@@ -1,7 +1,7 @@
 import { useYamlData } from '../hooks/useYamlData'
 import { writeYaml } from '../utils/yaml'
 
-function Reminders({ onAskChef }) {
+function Reminders({ onAskChef, onPasteToChat }) {
   const { data, loading, refresh } = useYamlData('reminders/active.yaml')
 
   const reminders = data?.reminders || []
@@ -60,7 +60,7 @@ function Reminders({ onAskChef }) {
         <div className="flex items-center gap-3">
           <span className="text-sm text-[var(--color-text-light)]">{pending.length} pending</span>
           <button
-            onClick={() => onAskChef?.("Set a reminder for me")}
+            onClick={() => onPasteToChat?.("Remind me to ")}
             className="text-sm px-3 py-1.5 rounded-lg bg-[var(--color-sage)] text-white
                        hover:bg-[var(--color-sage-dark)] transition-colors cursor-pointer"
           >
@@ -115,7 +115,7 @@ function Reminders({ onAskChef }) {
       {/* Quick add */}
       <div className="mt-6 pt-4 border-t border-[var(--color-peach)]/20">
         <button
-          onClick={() => onAskChef?.("Set a reminder for me")}
+          onClick={() => onPasteToChat?.("Remind me to ")}
           className="text-sm text-[var(--color-sage-dark)] hover:text-[var(--color-sage)] transition-colors cursor-pointer"
         >
           + Add a reminder via chat

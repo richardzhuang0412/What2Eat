@@ -181,7 +181,7 @@ function App() {
             />
           )}
           {activeView === 'recipes' && <Recipes onAskChef={goToChat} />}
-          {activeView === 'reminders' && <Reminders onAskChef={goToChat} />}
+          {activeView === 'reminders' && <Reminders onAskChef={goToChat} onPasteToChat={pasteToChat} />}
           {activeView === 'preferences' && <Preferences onRedoSetup={() => setNeedsSetup(true)} />}
           {activeView === 'settings' && <Settings onResetComplete={() => setNeedsSetup(true)} />}
         </ErrorBoundary>

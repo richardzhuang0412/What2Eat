@@ -14,6 +14,14 @@
 - [x] Context-aware loading messages
 - [x] Custom assistant naming
 - [x] Error boundary
+- [x] Photo upload support (image in chat, Claude reads via vision)
+- [x] Persistent action buttons on all panels (log groceries, new reminder, suggest recipe)
+- [x] Inline image display in chat bubbles
+- [x] Ingredient scratchpad (collect items from inventory, ask for recipes)
+- [x] Inventory click → expandable detail (replaces old jump-to-chat)
+- [x] Structured recipe display (ingredients/instructions/notes parsed from markdown)
+- [x] Gitignore user data for clean git pull updates (*.default.yaml pattern)
+- [x] /save skill (user-level, saves progress + memory)
 
 ## Upcoming
 - [ ] Phase 5: Animated chef/assistant sprite
@@ -23,3 +31,4 @@
 - [ ] Grocery list generation from planned meals
 - [ ] Nutrition tracking panel
 - [ ] Push notifications for reminders
+- [ ] Mobile companion app
