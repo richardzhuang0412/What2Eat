@@ -91,8 +91,8 @@ function App() {
   }, [])
   const clearScratchpad = useCallback(() => setScratchpad([]), [])
 
-  // macOS notifications for due reminders (polls every 60s)
-  useReminderNotifications(60000)
+  // macOS notifications for due reminders (polls every 15s)
+  useReminderNotifications(15000)
 
   // Check if first-run setup is needed
   useEffect(() => {

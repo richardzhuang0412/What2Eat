@@ -8,11 +8,15 @@ import {
 import yaml from 'js-yaml'
 
 /**
- * Polls reminders and sends macOS notifications for due/overdue items.
- * Tracks which reminders have already been notified to avoid duplicates.
+ * Polls reminders and sends macOS notifications.
+ * Two-stage notifications:
+ *   1. "Coming up" — 5 minutes before due
+ *   2. "Now" — when actually due or overdue
+ * Tracks notification state per reminder to avoid duplicates.
  */
-export function useReminderNotifications(pollInterval = 60000) {
-  const notifiedRef = useRef(new Set()) // reminder IDs already notified
+export function useReminderNotifications(pollInterval = 15000) {
+  // Track notification state: 'warned' (5-min early) or 'fired' (at due time)
+  const stateRef = useRef({}) // { [id]: 'warned' | 'fired' }
 
   useEffect(() => {
     let active = true
@@ -21,7 +25,6 @@ export function useReminderNotifications(pollInterval = 60000) {
       if (!active) return
 
       try {
-        // Check notification permission
         let granted = await isPermissionGranted()
         if (!granted) {
           const permission = await requestPermission()
@@ -29,50 +32,55 @@ export function useReminderNotifications(pollInterval = 60000) {
         }
         if (!granted) return
 
-        // Read reminders
         const content = await invoke('read_data_file', { relativePath: 'reminders/active.yaml' })
         const data = yaml.load(content, { schema: yaml.JSON_SCHEMA })
         const reminders = data?.reminders || []
 
         const now = new Date()
+        const fiveMinutes = 5 * 60 * 1000
 
         for (const reminder of reminders) {
           if (!reminder.due) continue
 
-          // If marked done, remove from notified set so it re-notifies if unchecked
+          // If marked done, clear tracking so it can re-notify if unchecked
           if (reminder.status === 'done') {
-            notifiedRef.current.delete(reminder.id)
+            delete stateRef.current[reminder.id]
             continue
           }
 
           if (reminder.status !== 'pending') continue
-          if (notifiedRef.current.has(reminder.id)) continue
 
           const dueDate = new Date(reminder.due)
-
-          // Notify if due within the next 5 minutes or already overdue
           const diffMs = dueDate - now
-          const fiveMinutes = 5 * 60 * 1000
+          const state = stateRef.current[reminder.id]
 
-          if (diffMs <= fiveMinutes) {
-            const isOverdue = diffMs < 0
-            const title = isOverdue ? '⏰ Overdue reminder' : '⏰ Reminder'
-            const body = reminder.text
-
-            sendNotification({ title, body })
-            notifiedRef.current.add(reminder.id)
+          // Stage 2: Due now or overdue → fire main notification
+          if (diffMs <= 0 && state !== 'fired') {
+            sendNotification({
+              title: '⏰ Reminder — now!',
+              body: reminder.text,
+            })
+            stateRef.current[reminder.id] = 'fired'
+          }
+          // Stage 1: Within 5 minutes → early warning
+          else if (diffMs > 0 && diffMs <= fiveMinutes && !state) {
+            const minutesLeft = Math.ceil(diffMs / 60000)
+            sendNotification({
+              title: `⏰ Coming up in ${minutesLeft} min`,
+              body: reminder.text,
+            })
+            stateRef.current[reminder.id] = 'warned'
           }
         }
       } catch (err) {
-        // Silently fail — notifications are best-effort
         console.log('[Notifications] Check failed:', err)
       }
     }
 
-    // Initial check after short delay (let app settle)
-    const initialTimeout = setTimeout(checkReminders, 3000)
+    // Initial check after short delay
+    const initialTimeout = setTimeout(checkReminders, 2000)
 
-    // Poll periodically
+    // Poll every 15 seconds
     const interval = setInterval(checkReminders, pollInterval)
 
     return () => {
