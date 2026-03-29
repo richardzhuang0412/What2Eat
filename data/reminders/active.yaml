@@ -1,7 +1,1 @@
-reminders:
-  - id: 1
-    created: 2026-03-28
-    due: "2026-03-28T23:15"
-    text: "Defrost meat"
-    status: pending
-    context: "Requested 2 minutes from now"
+reminders: []
