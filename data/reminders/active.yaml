@@ -1,7 +1,7 @@
 reminders:
   - id: 1
     created: 2026-03-28
-    due: "2026-03-28T23:22"
+    due: "2026-03-28T23:33"
     text: "Defrost meat"
     status: pending
-    context: "Reminded to defrost meat in 2 minutes"
+    context: "User requested reminder to defrost meat"
