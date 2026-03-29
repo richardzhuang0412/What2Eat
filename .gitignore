@@ -8,3 +8,12 @@ dist/
 CLAUDE.local.md
 data/.system-prompt.tmp
 data/.uploads/
+
+# User data files — not tracked so git pull works cleanly
+# Use Settings → Export for backups
+data/inventory/current.yaml
+data/recipes/history.yaml
+data/recipes/collection/*.md
+data/reminders/active.yaml
+data/preferences/profile.yaml
+data/CLAUDE.local.md

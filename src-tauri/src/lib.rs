@@ -402,6 +402,27 @@ pub fn run() {
                         .build(),
                 )?;
             }
+            // Initialize data files from defaults if they don't exist
+            if let Ok(data_dir) = get_data_dir_path() {
+                let defaults = vec![
+                    ("inventory/current.yaml", "inventory/current.default.yaml"),
+                    ("recipes/history.yaml", "recipes/history.default.yaml"),
+                    ("reminders/active.yaml", "reminders/active.default.yaml"),
+                    ("preferences/profile.yaml", "preferences/profile.default.yaml"),
+                ];
+                for (target, default) in defaults {
+                    let target_path = data_dir.join(target);
+                    let default_path = data_dir.join(default);
+                    if !target_path.exists() && default_path.exists() {
+                        if let Some(parent) = target_path.parent() {
+                            std::fs::create_dir_all(parent).ok();
+                        }
+                        std::fs::copy(&default_path, &target_path).ok();
+                    }
+                }
+                // Ensure recipes/collection/ exists
+                std::fs::create_dir_all(data_dir.join("recipes/collection")).ok();
+            }
             Ok(())
         })
         .run(tauri::generate_context!())
