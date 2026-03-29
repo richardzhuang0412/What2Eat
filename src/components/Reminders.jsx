@@ -62,7 +62,7 @@ function Reminders({ onAskChef, onPasteToChat }) {
             Tell your chef things like "remind me to defrost chicken tomorrow"
           </p>
           <button
-            onClick={() => onAskChef?.("Remind me to go grocery shopping this weekend")}
+            onClick={() => onPasteToChat?.("Remind me to ")}
             className="text-sm px-4 py-2 rounded-xl bg-[var(--color-sage)] text-white
                        hover:bg-[var(--color-sage-dark)] transition-colors cursor-pointer"
           >
