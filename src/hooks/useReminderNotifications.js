@@ -49,11 +49,11 @@ export function useReminderNotifications(pollInterval = 15000) {
           console.log(`[Notifications] #${reminder.id}: diffMs=${Math.round(diffMs / 1000)}s state=${state || 'none'}`)
 
           if (diffMs <= 0 && state !== 'fired') {
-            await notify('⏰ Reminder — now!', reminder.text)
+            await notify('Reminder - now!', reminder.text)
             stateRef.current[reminder.id] = 'fired'
           } else if (diffMs > 0 && diffMs <= fiveMinutes && !state) {
             const minutesLeft = Math.ceil(diffMs / 60000)
-            await notify(`⏰ Coming up in ${minutesLeft} min`, reminder.text)
+            await notify(`Coming up in ${minutesLeft} min`, reminder.text)
             stateRef.current[reminder.id] = 'warned'
           }
         }

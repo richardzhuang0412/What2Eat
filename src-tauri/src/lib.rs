@@ -371,19 +371,31 @@ fn chrono_timestamp() -> String {
     format!("{}", secs)
 }
 
-/// Send a macOS notification via osascript (fallback if plugin fails)
+/// Send a macOS notification via osascript (piped via stdin to avoid encoding issues)
 #[command]
 async fn send_notification(title: String, body: String) -> Result<(), String> {
+    use std::io::Write;
+
     let script = format!(
-        r#"display notification "{}" with title "{}""#,
-        body.replace('"', r#"\""#),
-        title.replace('"', r#"\""#)
+        "display notification \"{}\" with title \"{}\"",
+        body.replace('\\', "\\\\").replace('"', "\\\""),
+        title.replace('\\', "\\\\").replace('"', "\\\"")
     );
 
-    let output = StdCommand::new("osascript")
-        .args(["-e", &script])
-        .output()
-        .map_err(|e| format!("osascript failed: {}", e))?;
+    let mut child = StdCommand::new("osascript")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("osascript spawn failed: {}", e))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(script.as_bytes())
+            .map_err(|e| format!("Failed to write script: {}", e))?;
+    }
+
+    let output = child.wait_with_output()
+        .map_err(|e| format!("osascript wait failed: {}", e))?;
 
     if !output.status.success() {
         return Err(format!("Notification failed: {}", String::from_utf8_lossy(&output.stderr)));
