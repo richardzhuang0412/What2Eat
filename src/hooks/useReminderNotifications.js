@@ -37,9 +37,16 @@ export function useReminderNotifications(pollInterval = 60000) {
         const now = new Date()
 
         for (const reminder of reminders) {
+          if (!reminder.due) continue
+
+          // If marked done, remove from notified set so it re-notifies if unchecked
+          if (reminder.status === 'done') {
+            notifiedRef.current.delete(reminder.id)
+            continue
+          }
+
           if (reminder.status !== 'pending') continue
           if (notifiedRef.current.has(reminder.id)) continue
-          if (!reminder.due) continue
 
           const dueDate = new Date(reminder.due)
 

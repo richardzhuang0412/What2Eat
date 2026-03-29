@@ -23,6 +23,26 @@ function Reminders({ onAskChef, onPasteToChat }) {
     refresh()
   }
 
+  async function removeReminder(id) {
+    if (!data) return
+    const updated = {
+      ...data,
+      reminders: data.reminders.filter(r => r.id !== id),
+    }
+    await writeYaml('reminders/active.yaml', updated)
+    refresh()
+  }
+
+  async function clearCompleted() {
+    if (!data) return
+    const updated = {
+      ...data,
+      reminders: data.reminders.filter(r => r.status !== 'done'),
+    }
+    await writeYaml('reminders/active.yaml', updated)
+    refresh()
+  }
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -97,15 +117,24 @@ function Reminders({ onAskChef, onPasteToChat }) {
       {/* Done */}
       {done.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium text-[var(--color-text-light)] uppercase tracking-wide mb-3">
-            Completed
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-[var(--color-text-light)] uppercase tracking-wide">
+              Completed ({done.length})
+            </h2>
+            <button
+              onClick={clearCompleted}
+              className="text-xs text-[var(--color-text-light)] hover:text-[var(--color-danger)] transition-colors cursor-pointer"
+            >
+              Clear all
+            </button>
+          </div>
           <div className="space-y-2">
             {done.map(reminder => (
               <ReminderItem
                 key={reminder.id}
                 reminder={reminder}
                 onToggle={() => toggleDone(reminder.id)}
+                onRemove={() => removeReminder(reminder.id)}
               />
             ))}
           </div>
@@ -125,7 +154,7 @@ function Reminders({ onAskChef, onPasteToChat }) {
   )
 }
 
-function ReminderItem({ reminder, onToggle }) {
+function ReminderItem({ reminder, onToggle, onRemove }) {
   const isDone = reminder.status === 'done'
   const overdue = !isDone && isOverdue(reminder.due)
   const dueToday = !isDone && isDueToday(reminder.due)
@@ -174,6 +203,15 @@ function ReminderItem({ reminder, onToggle }) {
         }`}>
           {formatDue(reminder.due)}
         </span>
+      )}
+      {isDone && onRemove && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRemove() }}
+          className="text-xs text-[var(--color-text-light)] hover:text-[var(--color-danger)] transition-colors cursor-pointer flex-shrink-0"
+          title="Remove"
+        >
+          ✕
+        </button>
       )}
     </div>
   )
