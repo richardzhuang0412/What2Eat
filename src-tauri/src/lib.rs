@@ -1,5 +1,6 @@
 use std::process::Command as StdCommand;
 use tauri::command;
+use tauri_plugin_notification::NotificationExt;
 
 /// Invoke Claude CLI with working directory set to data/ so it only
 /// discovers chef context (data/CLAUDE.md), not dev context (root CLAUDE.md).
@@ -371,13 +372,30 @@ fn chrono_timestamp() -> String {
     format!("{}", secs)
 }
 
-/// Send a macOS notification via osascript (piped via stdin to avoid encoding issues)
+/// Send a macOS notification — tries Tauri plugin first (proper app icon + sound),
+/// falls back to osascript if that fails.
 #[command]
-async fn send_notification(title: String, body: String) -> Result<(), String> {
+async fn send_notification(app: tauri::AppHandle, title: String, body: String) -> Result<(), String> {
+    // Try Tauri notification plugin (shows app icon, supports sound)
+    let tauri_result = app.notification()
+        .builder()
+        .title(&title)
+        .body(&body)
+        .sound("default")
+        .show();
+
+    match tauri_result {
+        Ok(_) => return Ok(()),
+        Err(e) => {
+            eprintln!("Tauri notification failed: {}, trying osascript", e);
+        }
+    }
+
+    // Fallback: osascript via stdin
     use std::io::Write;
 
     let script = format!(
-        "display notification \"{}\" with title \"{}\"",
+        "display notification \"{}\" with title \"{}\" subtitle \"What2Eat\" sound name \"Glass\"",
         body.replace('\\', "\\\\").replace('"', "\\\""),
         title.replace('\\', "\\\\").replace('"', "\\\"")
     );
