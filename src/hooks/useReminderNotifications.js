@@ -1,42 +1,30 @@
 import { useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import {
-  isPermissionGranted,
-  requestPermission,
-  sendNotification,
-} from '@tauri-apps/plugin-notification'
 import yaml from 'js-yaml'
 
 /**
- * Polls reminders and sends macOS notifications.
- * Two-stage notifications:
- *   1. "Coming up" — 5 minutes before due
- *   2. "Now" — when actually due or overdue
- * Tracks notification state per reminder to avoid duplicates.
+ * Polls reminders and sends macOS notifications via osascript.
+ * Two-stage: warning at 5min, fire at due time.
  */
 export function useReminderNotifications(pollInterval = 15000) {
-  // Track notification state: 'warned' (5-min early) or 'fired' (at due time)
   const stateRef = useRef({}) // { [id]: 'warned' | 'fired' }
 
   useEffect(() => {
     let active = true
 
+    async function notify(title, body) {
+      try {
+        await invoke('send_notification', { title, body })
+        console.log(`[Notifications] Sent: ${title} — ${body}`)
+      } catch (e) {
+        console.error('[Notifications] Failed to send:', e)
+      }
+    }
+
     async function checkReminders() {
       if (!active) return
 
       try {
-        let granted = await isPermissionGranted()
-        console.log('[Notifications] Permission granted:', granted)
-        if (!granted) {
-          const permission = await requestPermission()
-          console.log('[Notifications] Permission request result:', permission)
-          granted = permission === 'granted'
-        }
-        if (!granted) {
-          console.log('[Notifications] No permission, skipping')
-          return
-        }
-
         const content = await invoke('read_data_file', { relativePath: 'reminders/active.yaml' })
         const data = yaml.load(content, { schema: yaml.JSON_SCHEMA })
         const reminders = data?.reminders || []
@@ -47,7 +35,6 @@ export function useReminderNotifications(pollInterval = 15000) {
         for (const reminder of reminders) {
           if (!reminder.due) continue
 
-          // If marked done, clear tracking so it can re-notify if unchecked
           if (reminder.status === 'done') {
             delete stateRef.current[reminder.id]
             continue
@@ -59,58 +46,26 @@ export function useReminderNotifications(pollInterval = 15000) {
           const diffMs = dueDate - now
           const state = stateRef.current[reminder.id]
 
-          console.log(`[Notifications] Reminder ${reminder.id}: "${reminder.text}" due=${reminder.due} diffMs=${diffMs} state=${state}`)
+          console.log(`[Notifications] #${reminder.id}: diffMs=${Math.round(diffMs / 1000)}s state=${state || 'none'}`)
 
-          // Stage 2: Due now or overdue → fire main notification
           if (diffMs <= 0 && state !== 'fired') {
-            console.log(`[Notifications] FIRING: ${reminder.text}`)
-            try {
-              await sendNotification({
-                title: '⏰ Reminder — now!',
-                body: reminder.text,
-              })
-              console.log('[Notifications] Notification sent successfully')
-            } catch (e) {
-              console.error('[Notifications] sendNotification failed:', e)
-              // Fallback: use Rust-side notification
-              try {
-                await invoke('send_notification', { title: '⏰ Reminder — now!', body: reminder.text })
-                console.log('[Notifications] Fallback notification sent')
-              } catch (e2) {
-                console.error('[Notifications] Fallback also failed:', e2)
-              }
-            }
+            await notify('⏰ Reminder — now!', reminder.text)
             stateRef.current[reminder.id] = 'fired'
-          }
-          // Stage 1: Within 5 minutes → early warning
-          else if (diffMs > 0 && diffMs <= fiveMinutes && !state) {
+          } else if (diffMs > 0 && diffMs <= fiveMinutes && !state) {
             const minutesLeft = Math.ceil(diffMs / 60000)
-            console.log(`[Notifications] WARNING (${minutesLeft}min): ${reminder.text}`)
-            try {
-              await sendNotification({
-                title: `⏰ Coming up in ${minutesLeft} min`,
-                body: reminder.text,
-              })
-            } catch (e) {
-              console.error('[Notifications] Warning notification failed:', e)
-              try {
-                await invoke('send_notification', { title: `⏰ Coming up in ${minutesLeft} min`, body: reminder.text })
-              } catch (e2) {
-                console.error('[Notifications] Warning fallback failed:', e2)
-              }
-            }
+            await notify(`⏰ Coming up in ${minutesLeft} min`, reminder.text)
             stateRef.current[reminder.id] = 'warned'
           }
         }
       } catch (err) {
-        console.log('[Notifications] Check failed:', err)
+        // File not found is normal for fresh installs
+        if (!(typeof err === 'string' && err.includes('not found'))) {
+          console.log('[Notifications] Check failed:', err)
+        }
       }
     }
 
-    // Initial check after short delay
     const initialTimeout = setTimeout(checkReminders, 2000)
-
-    // Poll every 15 seconds
     const interval = setInterval(checkReminders, pollInterval)
 
     return () => {
