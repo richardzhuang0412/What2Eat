@@ -163,12 +163,8 @@ function RecipeDetail({ recipe, onClose, onCook }) {
             </button>
           </div>
 
-          {/* Body (markdown content rendered as plain text) */}
-          {recipe.body && (
-            <div className="text-sm text-[var(--color-text)] leading-relaxed whitespace-pre-wrap">
-              {recipe.body}
-            </div>
-          )}
+          {/* Body — parsed into sections */}
+          {recipe.body && <RecipeBody body={recipe.body} />}
 
           {/* Source */}
           {recipe.source && recipe.source !== 'original' && (
@@ -198,6 +194,134 @@ function RecipeDetail({ recipe, onClose, onCook }) {
       </div>
     </div>
   )
+}
+
+/**
+ * Parse recipe body markdown into sections and render with nice formatting.
+ * Handles: ## Ingredients (bullet list), ## Instructions (numbered list), ## Notes (bullet list)
+ * Falls back to raw text if structure doesn't match.
+ */
+function RecipeBody({ body }) {
+  const sections = parseRecipeSections(body)
+
+  // If no sections were parsed, fall back to raw text
+  if (sections.length === 0) {
+    return (
+      <div className="text-sm text-[var(--color-text)] leading-relaxed whitespace-pre-wrap">
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {sections.map((section, i) => (
+        <div key={i}>
+          {section.title && (
+            <h3 className="text-xs font-semibold text-[var(--color-text-light)] uppercase tracking-wide mb-2">
+              {section.title}
+            </h3>
+          )}
+          {section.type === 'ingredients' && (
+            <ul className="space-y-1.5">
+              {section.items.map((item, j) => (
+                <li key={j} className="flex items-start gap-2 text-sm text-[var(--color-text)]">
+                  <span className="text-[var(--color-sage)] mt-0.5 flex-shrink-0">•</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {section.type === 'instructions' && (
+            <ol className="space-y-3">
+              {section.items.map((item, j) => (
+                <li key={j} className="flex items-start gap-3 text-sm text-[var(--color-text)]">
+                  <span className="w-5 h-5 rounded-full bg-[var(--color-sage)]/15 text-[var(--color-sage-dark)]
+                                   flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
+                    {j + 1}
+                  </span>
+                  <span className="leading-relaxed">{item}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          {section.type === 'notes' && (
+            <div className="bg-[var(--color-cream)] rounded-lg p-3 space-y-1.5">
+              {section.items.map((item, j) => (
+                <p key={j} className="flex items-start gap-2 text-xs text-[var(--color-text-light)]">
+                  <span className="mt-0.5 flex-shrink-0">💡</span>
+                  <span>{item}</span>
+                </p>
+              ))}
+            </div>
+          )}
+          {section.type === 'text' && (
+            <p className="text-sm text-[var(--color-text)] leading-relaxed whitespace-pre-wrap">
+              {section.content}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function parseRecipeSections(body) {
+  if (!body) return []
+
+  const lines = body.split('\n')
+  const sections = []
+  let currentSection = null
+
+  for (const line of lines) {
+    // Check for section headers (## Ingredients, ## Instructions, ## Notes, etc.)
+    const headerMatch = line.match(/^##\s+(.+)/)
+    if (headerMatch) {
+      if (currentSection) sections.push(currentSection)
+      const title = headerMatch[1].trim()
+      const titleLower = title.toLowerCase()
+
+      let type = 'text'
+      if (titleLower.includes('ingredient')) type = 'ingredients'
+      else if (titleLower.includes('instruction') || titleLower.includes('step') || titleLower.includes('direction') || titleLower.includes('method')) type = 'instructions'
+      else if (titleLower.includes('note') || titleLower.includes('tip')) type = 'notes'
+
+      currentSection = { title, type, items: [], content: '' }
+      continue
+    }
+
+    if (!currentSection) {
+      // Text before any section header
+      if (line.trim()) {
+        if (sections.length === 0 || sections[sections.length - 1].type !== 'text') {
+          sections.push({ type: 'text', content: line })
+        } else {
+          sections[sections.length - 1].content += '\n' + line
+        }
+      }
+      continue
+    }
+
+    // Parse list items (- item or 1. item)
+    const bulletMatch = line.match(/^[-*]\s+(.+)/)
+    const numberedMatch = line.match(/^\d+\.\s+(.+)/)
+
+    if (bulletMatch) {
+      currentSection.items.push(bulletMatch[1].trim())
+    } else if (numberedMatch) {
+      currentSection.items.push(numberedMatch[1].trim())
+    } else if (line.trim()) {
+      // Non-list text within a section — append to items as a line
+      currentSection.items.push(line.trim())
+    }
+  }
+
+  if (currentSection) sections.push(currentSection)
+
+  // If we only got text sections (no structured headers found), return empty to trigger fallback
+  if (sections.every(s => s.type === 'text')) return []
+
+  return sections
 }
 
 function SourceBadge({ source, expanded = false }) {
